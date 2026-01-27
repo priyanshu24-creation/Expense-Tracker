@@ -1,0 +1,305 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+
+<style>
+body{
+    margin:0;
+    font-family: "Segoe UI", sans-serif;
+    background:#f4f6f8;
+}
+
+/* HEADER */
+.topbar{
+    background:linear-gradient(135deg,#4f46e5,#3b82f6);
+    color:white;
+    padding:15px 25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.logo{
+    font-size:22px;
+    font-weight:bold;
+}
+.slogan{
+    font-size:12px;
+    opacity:0.9;
+}
+.user-area{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.user-area img{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid white;
+    cursor:pointer;
+}
+
+/* MAIN */
+.container{
+    padding:20px;
+}
+
+/* FORM */
+.form-card{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,.1);
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:15px;
+}
+.form-card select,
+.form-card input{
+    padding:8px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+.form-card button{
+    background:#4f46e5;
+    color:white;
+    border:none;
+    padding:8px 16px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+/* FILTER */
+.filter-card{
+    background:white;
+    padding:10px;
+    border-radius:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,.1);
+    margin-bottom:15px;
+}
+
+/* STATS */
+.stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+    margin-bottom:15px;
+}
+.card{
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+    font-weight:bold;
+}
+.card:nth-child(1){background:#dcfce7;}
+.card:nth-child(2){background:#fee2e2;}
+.card:nth-child(3){background:#e0e7ff;}
+
+/* TRANSACTIONS */
+ul{
+    list-style:none;
+    padding:0;
+}
+li{
+    background:white;
+    margin-bottom:10px;
+    padding:12px;
+    border-radius:8px;
+    display:flex;
+    justify-content:space-between;
+    box-shadow:0 2px 5px rgba(0,0,0,.08);
+}
+
+/* ===== NEW PART (BACKDROP) ===== */
+.drawer-overlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100vh;
+    background:rgba(0,0,0,0.4);
+    opacity:0;
+    pointer-events:none;
+    transition:.3s;
+    z-index:9998;
+}
+.drawer-overlay.show{
+    opacity:1;
+    pointer-events:all;
+}
+
+/* PROFILE DRAWER */
+.profile-drawer{
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    background: white;
+    box-shadow: -4px 0 10px rgba(0,0,0,0.2);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 9999;
+}
+
+.profile-drawer.open{
+    transform: translateX(0);
+}
+.profile-header{
+    text-align:center;
+}
+.profile-img{
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    object-fit:cover;
+}
+.close-btn{
+    float:right;
+    cursor:pointer;
+    font-size:22px;
+}
+.profile-menu{
+    margin-top:20px;
+}
+.profile-menu li{
+    padding:10px;
+    border-bottom:1px solid #ddd;
+}
+.profile-menu a{text-decoration:none;color:black;}
+
+.footer{
+    margin-top:40px;
+    padding:15px;
+    text-align:center;
+    background:#1e293b;
+    color: white;
+    font-size:14px;
+    letter-spacing:0.5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <div>
+        <div class="logo">💰 Expense Tracker</div>
+        <div class="slogan">Track every rupee. Control your future.</div>
+    </div>
+    <div class="user-area">
+        {{ request.user.username }}
+        <img src="{{ request.user.profile.image.url }}" onclick="openProfile()">
+    </div>
+</div>
+
+<div class="container">
+
+<form method="POST" class="form-card">
+{% csrf_token %}
+<select name="type">
+<option value="income">Income</option>
+<option value="expense">Expense</option>
+</select>
+
+<input type="number" name="amount" placeholder="Amount" required>
+
+<select name="category" required>
+<option value="food">Food</option>
+<option value="transport">Transport</option>
+<option value="rent">Rent</option>
+<option value="shopping">Shopping</option>
+<option value="salary">Salary</option>
+<option value="other">Other</option>
+</select>
+
+<input type="date" name="date" required>
+<button type="submit">Add</button>
+</form>
+
+<form method="GET" class="filter-card">
+<label>Select Month:</label>
+<input type="month" name="month" value="{{ selected_month }}">
+<button type="submit">Filter</button>
+</form>
+
+<div class="stats">
+<div class="card">Income<br>₹{{ total_income }}</div>
+<div class="card">Expense<br>₹{{ total_expense }}</div>
+<div class="card">Balance<br>₹{{ balance }}</div>
+</div>
+
+<ul>
+{% for t in transactions %}
+<li>
+{{ t.date }} - {{ t.get_category_display }} - {{ t.type }} - ₹{{ t.amount }}
+<a href="/delete/{{ t.id }}/" style="color:red;text-decoration:none;">Delete</a>
+</li>
+{% endfor %}
+</ul>
+
+{% if chart_values %}
+<div style="max-width:500px;margin:auto;">
+<canvas id="expenseChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const labels = JSON.parse('{{ chart_labels|escapejs }}');
+const values = JSON.parse('{{ chart_values|escapejs }}');
+const ctx = document.getElementById('expenseChart').getContext('2d');
+new Chart(ctx,{type:'pie',data:{labels:labels,datasets:[{data:values}]}})
+</script>
+{% endif %}
+</div>
+
+<!-- NEW OVERLAY -->
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeProfile()"></div>
+
+<!-- PROFILE DRAWER -->
+<div id="profileDrawer" class="profile-drawer">
+<div class="profile-header">
+<span onclick="closeProfile()" class="close-btn">×</span>
+<img src="{{ request.user.profile.image.url }}" class="profile-img">
+<h3>{{ request.user.username }}</h3>
+<p>{{ request.user.profile.full_name }}</p>
+</div>
+
+<ul class="profile-menu">
+<li><a href="{% url 'profile' %}">View Profile</a></li>
+<li><a href="{% url 'edit_profile' %}">Edit Profile</a></li>
+<li><a href="{% url 'password_change' %}">Change Password</a></li>
+<li>My Transactions</li>
+<li>Help & Support</li>
+<form method="post" action="{% url 'logout' %}">
+{% csrf_token %}
+<button type="submit" style="color:red;background:none;border:none;cursor:pointer;">Logout</button>
+</form>
+</ul>
+</div>
+
+<script>
+function openProfile(){
+    document.getElementById("profileDrawer").classList.add("open");
+    document.getElementById("drawerOverlay").classList.add("show");
+    document.body.style.overflow="hidden";
+}
+function closeProfile(){
+    document.getElementById("profileDrawer").classList.remove("open");
+    document.getElementById("drawerOverlay").classList.remove("show");
+    document.body.style.overflow="auto";
+}
+</script>
+
+<footer class="footer">
+    This website made by Priyanshu Chatterjee BN © 2024. All rights reserved.
+</footer>
+
+</body>
+</html>

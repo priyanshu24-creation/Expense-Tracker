@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login</title>
+<style>
+body{
+    background:#4f46e5;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:Arial;
+}
+.box{
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    width:300px;
+}
+input{
+    width:100%;
+    padding:8px;
+    margin:5px 0;
+}
+button{
+    width:100%;
+    padding:10px;
+    background:#4f46e5;
+    color:white;
+    border:none;
+}
+</style>
+</head>
+<body>
+<div class="box">
+<h2>Login</h2>
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Login</button>
+</form>
+</div>
+</body>
+</html>
