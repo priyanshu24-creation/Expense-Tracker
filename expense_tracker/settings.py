@@ -17,7 +17,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-dev-key")
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['.onrender.com', "127.0.0.1","localhost"]
 
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
