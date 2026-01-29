@@ -2,304 +2,306 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Expense Tracker</title>
-    <link rel="stylesheet" href="{% static 'style.css' %}">
+<title>Expense Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+:root{
+--primary:#4f46e5;
+--secondary:#3b82f6;
+--accent:#22c55e;
+--bg:#f4f7fb;
+--card:#ffffff;
+--shadow:0 15px 35px rgba(0,0,0,.12);
+}
+
+*{box-sizing:border-box;}
 body{
-    margin:0;
-    font-family: "Segoe UI", sans-serif;
-    background:#f4f6f8;
+margin:0;
+font-family:"Segoe UI",sans-serif;
+background:linear-gradient(120deg,#eef2ff,#f8fafc);
+color:#1e293b;
 }
 
-/* HEADER */
+/* TOP BAR */
 .topbar{
-    background:linear-gradient(135deg,#4f46e5,#3b82f6);
-    color:white;
-    padding:15px 25px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:white;
+padding:15px 25px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+box-shadow:0 8px 25px rgba(0,0,0,.25);
 }
-.logo{
-    font-size:22px;
-    font-weight:bold;
+.logo{font-size:22px;font-weight:bold;}
+.slogan{font-size:12px;opacity:.9;}
+.user-area{display:flex;align-items:center;gap:10px;font-weight:600;}
+#profilePic{
+width:42px;height:42px;border-radius:50%;
+border:3px solid white;
+cursor:pointer;
+transition:.3s;
 }
-.slogan{
-    font-size:12px;
-    opacity:0.9;
-}
-.user-area{
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-.user-area img{
-    width:40px;
-    height:40px;
-    border-radius:50%;
-    object-fit:cover;
-    border:2px solid white;
-    cursor:pointer;
-}
+#profilePic:hover{transform:scale(1.1) rotate(5deg);}
 
-/* MAIN */
+/* CONTAINER */
 .container{
-    padding:20px;
+padding:25px;
+max-width:1200px;
+margin:auto;
+animation:fadeUp .7s ease;
 }
 
 /* FORM */
 .form-card{
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    box-shadow:0 3px 8px rgba(0,0,0,.1);
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-bottom:15px;
+background:white;
+padding:15px;
+border-radius:18px;
+box-shadow:var(--shadow);
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-bottom:15px;
+transition:.3s;
 }
-.form-card select,
-.form-card input{
-    padding:8px;
-    border-radius:6px;
-    border:1px solid #ccc;
+.form-card:hover{transform:translateY(-5px);}
+.form-card input,.form-card select{
+padding:10px;border-radius:10px;border:1px solid #ccc;
 }
 .form-card button{
-    background:#4f46e5;
-    color:white;
-    border:none;
-    padding:8px 16px;
-    border-radius:6px;
-    cursor:pointer;
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:white;border:none;padding:10px 20px;
+border-radius:12px;cursor:pointer;
+transition:.3s;
 }
+.form-card button:hover{transform:scale(1.05);}
 
 /* FILTER */
 .filter-card{
-    background:white;
-    padding:10px;
-    border-radius:10px;
-    box-shadow:0 3px 8px rgba(0,0,0,.1);
-    margin-bottom:15px;
+background:white;
+padding:12px;
+border-radius:16px;
+box-shadow:var(--shadow);
+margin-bottom:15px;
 }
 
 /* STATS */
 .stats{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:15px;
-    margin-bottom:15px;
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:15px;
+margin-bottom:20px;
 }
 .card{
-    padding:15px;
-    border-radius:10px;
-    text-align:center;
-    font-weight:bold;
+padding:22px;
+border-radius:18px;
+text-align:center;
+font-weight:bold;
+font-size:17px;
+box-shadow:var(--shadow);
+transition:.3s;
 }
-.card:nth-child(1){background:#dcfce7;}
-.card:nth-child(2){background:#fee2e2;}
-.card:nth-child(3){background:#e0e7ff;}
+.card:hover{transform:translateY(-6px);}
+.card:nth-child(1){background:#dcfce7;color:#166534;}
+.card:nth-child(2){background:#fee2e2;color:#991b1b;}
+.card:nth-child(3){background:#e0e7ff;color:#3730a3;}
+.count{font-size:24px;display:block;margin-top:6px;}
 
-/* TRANSACTIONS */
-ul{
-    list-style:none;
-    padding:0;
-}
+/* LIST */
+ul{list-style:none;padding:0;}
 li{
-    background:white;
-    margin-bottom:10px;
-    padding:12px;
-    border-radius:8px;
-    display:flex;
-    justify-content:space-between;
-    box-shadow:0 2px 5px rgba(0,0,0,.08);
+background:white;
+margin-bottom:10px;
+padding:14px;
+border-radius:14px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+box-shadow:0 6px 15px rgba(0,0,0,.1);
+transition:.3s;
+}
+li:hover{transform:translateX(8px);}
+li a{color:red;text-decoration:none;font-weight:bold;}
+
+/* CHART */
+.chart-box{
+background:white;
+padding:20px;
+border-radius:22px;
+box-shadow:var(--shadow);
+max-width:450px;
+margin:30px auto;
 }
 
-/* ===== NEW PART (BACKDROP) ===== */
+/* OVERLAY */
 .drawer-overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100vh;
-    background:rgba(0,0,0,0.4);
-    opacity:0;
-    pointer-events:none;
-    transition:.3s;
-    z-index:9998;
+position:fixed;inset:0;
+background:rgba(0,0,0,.4);
+opacity:0;pointer-events:none;
+transition:.3s;z-index:999;
 }
-.drawer-overlay.show{
-    opacity:1;
-    pointer-events:all;
-}
+.drawer-overlay.show{opacity:1;pointer-events:all;}
 
-/* PROFILE DRAWER */
+/* DRAWER */
 .profile-drawer{
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 100vh;
-    background: white;
-    box-shadow: -4px 0 10px rgba(0,0,0,0.2);
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    z-index: 9999;
+position:fixed;top:0;right:0;
+width:300px;height:100vh;
+background:white;
+box-shadow:-4px 0 20px rgba(0,0,0,.25);
+transform:translateX(100%);
+transition:.35s;
+z-index:1000;
+padding:20px;
 }
-
-.profile-drawer.open{
-    transform: translateX(0);
-}
-.profile-header{
-    text-align:center;
-}
+.profile-drawer.open{transform:translateX(0);}
+.profile-header{text-align:center;}
 .profile-img{
-    width:80px;
-    height:80px;
-    border-radius:50%;
-    object-fit:cover;
+width:80px;height:80px;border-radius:50%;
+border:3px solid var(--primary);
+object-fit:cover;
 }
-.close-btn{
-    float:right;
-    cursor:pointer;
-    font-size:22px;
-}
-.profile-menu{
-    margin-top:20px;
-}
-.profile-menu li{
-    padding:10px;
-    border-bottom:1px solid #ddd;
-}
-.profile-menu a{text-decoration:none;color:black;}
+.close-btn{float:right;font-size:22px;cursor:pointer;}
+.profile-menu li{border-bottom:1px solid #ddd;padding:10px;}
+.profile-menu a{text-decoration:none;color:#1e293b;font-weight:600;}
 
-.footer{
-    margin-top:40px;
-    padding:15px;
-    text-align:center;
-    background:#1e293b;
-    color: white;
-    font-size:14px;
-    letter-spacing:0.5px;
+/* FOOTER */
+footer{
+margin-top:40px;
+padding:15px;
+text-align:center;
+background:#1e293b;
+color:white;
 }
 
+/* ANIMATIONS */
+@keyframes fadeUp{
+from{opacity:0;transform:translateY(20px);}
+to{opacity:1;transform:translateY(0);}
+}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-    <div>
-        <div class="logo">💰 Expense Tracker</div>
-        <div class="slogan">Track every rupee. Control your future.</div>
-    </div>
-    <div class="user-area">
-        {{ request.user.username }}
-        <img src="{{ request.user.profile.image.url }}" onclick="openProfile()">
-    </div>
+<div>
+<div class="logo">💰 Expense Tracker</div>
+<div class="slogan">Track every rupee. Control your future.</div>
+</div>
+<div class="user-area">
+{{ request.user.username }}
+<img id="profilePic" src="{{ request.user.profile.image.url }}">
+</div>
 </div>
 
 <div class="container">
 
 <form method="POST" class="form-card">
 {% csrf_token %}
-<select name="type">
-<option value="income">Income</option>
-<option value="expense">Expense</option>
-</select>
-
+<select name="type"><option>Income</option><option>Expense</option></select>
 <input type="number" name="amount" placeholder="Amount" required>
-
-<select name="category" required>
-<option value="food">Food</option>
-<option value="transport">Transport</option>
-<option value="rent">Rent</option>
-<option value="shopping">Shopping</option>
-<option value="salary">Salary</option>
-<option value="other">Other</option>
+<select name="category">
+<option>Food</option><option>Transport</option><option>Rent</option>
+<option>Shopping</option><option>Salary</option><option>Other</option>
 </select>
-
 <input type="date" name="date" required>
-<button type="submit">Add</button>
+<button>Add</button>
 </form>
 
 <form method="GET" class="filter-card">
-<label>Select Month:</label>
 <input type="month" name="month" value="{{ selected_month }}">
-<button type="submit">Filter</button>
+<button>Filter</button>
 </form>
 
 <div class="stats">
-<div class="card">Income<br>₹{{ total_income }}</div>
-<div class="card">Expense<br>₹{{ total_expense }}</div>
-<div class="card">Balance<br>₹{{ balance }}</div>
+<div class="card">💰 Income <span class="count">{{ total_income }}</span></div>
+<div class="card">🧾 Expense <span class="count">{{ total_expense }}</span></div>
+<div class="card">⚖ Balance <span class="count">{{ balance }}</span></div>
 </div>
 
 <ul>
 {% for t in transactions %}
 <li>
-{{ t.date }} - {{ t.get_category_display }} - {{ t.type }} - ₹{{ t.amount }}
-<a href="/delete/{{ t.id }}/" style="color:red;text-decoration:none;">Delete</a>
+<span>{{ t.date }} | {{ t.get_category_display }} | {{ t.type }}</span>
+<span>₹{{ t.amount }} <a href="/delete/{{ t.id }}/">✖</a></span>
 </li>
 {% endfor %}
 </ul>
 
 {% if chart_values %}
-<div style="max-width:500px;margin:auto;">
+<div class="chart-box">
 <canvas id="expenseChart"></canvas>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const labels = JSON.parse('{{ chart_labels|escapejs }}');
 const values = JSON.parse('{{ chart_values|escapejs }}');
-const ctx = document.getElementById('expenseChart').getContext('2d');
-new Chart(ctx,{type:'pie',data:{labels:labels,datasets:[{data:values}]}})
+new Chart(document.getElementById('expenseChart'),{
+type:'pie',
+data:{labels:labels,datasets:[{data:values}]},
+options:{plugins:{legend:{position:'bottom'}}}
+});
 </script>
 {% endif %}
+
 </div>
 
-<!-- NEW OVERLAY -->
-<div id="drawerOverlay" class="drawer-overlay" onclick="closeProfile()"></div>
+<div id="drawerOverlay" class="drawer-overlay"></div>
 
-<!-- PROFILE DRAWER -->
 <div id="profileDrawer" class="profile-drawer">
 <div class="profile-header">
-<span onclick="closeProfile()" class="close-btn">×</span>
+<span class="close-btn" id="closeBtn">×</span>
 <img src="{{ request.user.profile.image.url }}" class="profile-img">
 <h3>{{ request.user.username }}</h3>
 <p>{{ request.user.profile.full_name }}</p>
 </div>
-
 <ul class="profile-menu">
 <li><a href="{% url 'profile' %}">View Profile</a></li>
 <li><a href="{% url 'edit_profile' %}">Edit Profile</a></li>
 <li><a href="{% url 'password_change' %}">Change Password</a></li>
-<li>My Transactions</li>
-<li>Help & Support</li>
-<form method="post" action="{% url 'logout' %}">
-{% csrf_token %}
-<button type="submit" style="color:red;background:none;border:none;cursor:pointer;">Logout</button>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}
+<button style="color:red;background:none;border:none;font-weight:bold;">Logout</button>
 </form>
 </ul>
 </div>
 
-<script>
-function openProfile(){
-    document.getElementById("profileDrawer").classList.add("open");
-    document.getElementById("drawerOverlay").classList.add("show");
-    document.body.style.overflow="hidden";
-}
-function closeProfile(){
-    document.getElementById("profileDrawer").classList.remove("open");
-    document.getElementById("drawerOverlay").classList.remove("show");
-    document.body.style.overflow="auto";
-}
-</script>
-
-<footer class="footer">
-    This website made by Priyanshu Chatterjee BN © 2024. All rights reserved.
+<footer>
+This website made by Priyanshu Chatterjee BN © 2024
 </footer>
+
+<script>
+const drawer=document.getElementById("profileDrawer");
+const overlay=document.getElementById("drawerOverlay");
+const pic=document.getElementById("profilePic");
+const closeBtn=document.getElementById("closeBtn");
+
+/* force closed */
+drawer.classList.remove("open");
+overlay.classList.remove("show");
+
+pic.addEventListener("click",()=>{
+drawer.classList.add("open");
+overlay.classList.add("show");
+});
+overlay.addEventListener("click",()=>{
+drawer.classList.remove("open");
+overlay.classList.remove("show");
+});
+closeBtn.addEventListener("click",()=>{
+drawer.classList.remove("open");
+overlay.classList.remove("show");
+});
+
+/* count animation */
+document.querySelectorAll(".count").forEach(el=>{
+let target=parseInt(el.innerText)||0;
+let c=0,step=Math.max(1,Math.ceil(target/40));
+let i=setInterval(()=>{
+c+=step;
+if(c>=target){c=target;clearInterval(i);}
+el.innerText=c;
+},25);
+});
+</script>
 
 </body>
 </html>

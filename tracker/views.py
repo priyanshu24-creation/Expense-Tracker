@@ -3,6 +3,11 @@ from .models import Transaction
 from django.contrib.auth.decorators import login_required
 import json
 from .models import Profile
+import random
+from django.core.mail import send_mail
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from .models import EmailOTP
  
 
 @login_required
@@ -26,13 +31,37 @@ def index(request):
         year, month = selected_month.split('-')
         transactions = transactions.filter(date__year=year, date__month=month)
 
-    total_income = sum(t.amount for t in transactions if t.type == "income")
-    total_expense = sum(t.amount for t in transactions if t.type == "expense")
+    total_income = sum(t.amount for t in transactions if t.type.lower() == "income")
+    total_expense = sum(t.amount for t in transactions if t.type.lower() == "expense")
     balance = total_income - total_expense
+
+    sent_flag = request.session.get("low_balance_email_sent", False)
+
+    if balance <= 100 and not sent_flag:
+     send_mail(
+        subject="⚠ Low Balance Alert - Expense Tracker",
+        message=(
+            f"Hello {request.user.username},\n\n"
+            f"⚠ Your balance has dropped to ₹{balance}.\n\n"
+            f"This is a friendly reminder to control your expenses "
+            f"and try saving some money.\n\n"
+            f"Tip: Track daily expenses and set a monthly budget.\n\n"
+            f"Stay financially strong 💪\n"
+            f"Expense Tracker Team"
+        ),
+        from_email="yourgmail@gmail.com",
+        recipient_list=[request.user.email],
+        fail_silently=True,
+    )
+    request.session["low_balance_email_sent"] = True
+
+    if balance > 100:
+     request.session["low_balance_email_sent"] = False
+
 
     category_data = {}
     for t in transactions:
-        if t.type == "expense":
+        if t.type.lower() == "expense":
             label = t.get_category_display()
             category_data[label] = category_data.get(label, 0) + t.amount
 
@@ -69,3 +98,62 @@ def edit_profile(request):
         return redirect("home")
 
     return render(request, "edit_profile.html", {"profile": profile})
+
+def email_login(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return render(
+                request,
+                "tracker/login_email.html",
+                {"error": "Email not registered"}
+            )
+
+        otp = str(random.randint(100000, 999999))
+        EmailOTP.objects.create(user=user, otp=otp)
+
+        send_mail(
+    subject="🔐 Your Expense Tracker Login Code",
+    message=(
+        f"Hello {user.username},\n\n"
+        f"Your One-Time Password (OTP) for login is:\n\n"
+        f"👉 {otp}\n\n"
+        f"This code is valid for only a few minutes.\n\n"
+        f"If this was NOT you, please ignore this email. "
+        f"Someone may have tried to access your account.\n\n"
+        f"Stay safe,\n"
+        f"Expense Tracker Team"
+    ),
+    from_email="trackexpenseteam@gmail.com",
+    recipient_list=[email],
+)
+        # 🔑 STORE USER ID, NOT EMAIL
+        request.session["otp_user_id"] = user.id
+        return redirect("verify_otp")
+
+    return render(request, "tracker/login_email.html")
+
+def verify_otp(request):
+    user_id = request.session.get("otp_user_id")
+    if not user_id:
+        return redirect("email_login")
+
+    user = User.objects.get(id=user_id)
+
+    if request.method == "POST":
+        code = request.POST.get("otp")
+        otp_obj = EmailOTP.objects.filter(user=user).last()
+
+        if otp_obj and otp_obj.otp == code:
+            login(request, user)
+            return redirect("home")
+
+        return render(
+            request,
+            "tracker/verify_otp.html",
+            {"error": "Invalid code"}
+        )
+
+    return render(request, "tracker/verify_otp.html")

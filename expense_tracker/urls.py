@@ -1,19 +1,22 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
+from tracker.views import email_login, verify_otp
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('login/', auth_views.LoginView.as_view(template_name="login.html"), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    # OTP login system
+    path('login/', email_login, name='email_login'),
+    path('verify/', verify_otp, name='verify_otp'),
+    path('logout/', include('django.contrib.auth.urls')),  # keeps logout
 
+    # app routes
     path('', include('tracker.urls')),
 
-    path('password-change/', auth_views.PasswordChangeView.as_view(template_name='password_change.html'), name='password_change'),
-    path('password-change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='password_change_done.html'), name='password_change_done'),
+    # password change (optional)
+    path('password-change/', include('django.contrib.auth.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

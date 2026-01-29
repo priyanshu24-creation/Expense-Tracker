@@ -13,11 +13,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # ======================
 
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-dev-key")
 
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['.onrender.com', 'localhost']
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
@@ -37,6 +37,10 @@ INSTALLED_APPS = [
 ]
 
 
+# ======================
+# MIDDLEWARE
+# ======================
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -52,10 +56,14 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'expense_tracker.urls'
 
 
+# ======================
+# TEMPLATES
+# ======================
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],   # using app templates
+        'DIRS': [],  
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,16 +80,26 @@ WSGI_APPLICATION = 'expense_tracker.wsgi.application'
 
 
 # ======================
-# DATABASE (PostgreSQL)
+# DATABASE (PostgreSQL ONLY)
 # ======================
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            os.environ.get("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
 
 
 # ======================
@@ -104,6 +122,13 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "trackexpenseteam@gmail.com"
+EMAIL_HOST_PASSWORD = "jgqmhjvuodbwxasv"  # NOT normal password
 
 
 # ======================
