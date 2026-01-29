@@ -8,7 +8,9 @@ from django.core.mail import send_mail
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from .models import EmailOTP
- 
+from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
 
 @login_required
 def index(request):
@@ -111,29 +113,33 @@ def email_login(request):
                 {"error": "Email not registered"}
             )
 
+        # 🔥 Delete old OTPs for this user
+        EmailOTP.objects.filter(user=user).delete()
+
         otp = str(random.randint(100000, 999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
         send_mail(
-    subject="🔐 Your Expense Tracker Login Code",
-    message=(
-        f"Hello {user.username},\n\n"
-        f"Your One-Time Password (OTP) for login is:\n\n"
-        f"👉 {otp}\n\n"
-        f"This code is valid for only a few minutes.\n\n"
-        f"If this was NOT you, please ignore this email. "
-        f"Someone may have tried to access your account.\n\n"
-        f"Stay safe,\n"
-        f"Expense Tracker Team"
-    ),
-    from_email="trackexpenseteam@gmail.com",
-    recipient_list=[email],
-)
-        # 🔑 STORE USER ID, NOT EMAIL
+            subject="🔐 Your Expense Tracker Login Code",
+            message=(
+                f"Hello {user.username},\n\n"
+                f"Your One-Time Password (OTP) for login is:\n\n"
+                f"👉 {otp}\n\n"
+                f"This code is valid for only a few minutes.\n\n"
+                f"If this was NOT you, please ignore this email. "
+                f"Someone may have tried to access your account.\n\n"
+                f"Stay safe,\n"
+                f"Expense Tracker Team"
+            ),
+            from_email="trackexpenseteam@gmail.com",
+            recipient_list=[email],
+        )
+
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
 
     return render(request, "tracker/login_email.html")
+
 
 def verify_otp(request):
     user_id = request.session.get("otp_user_id")
@@ -144,9 +150,28 @@ def verify_otp(request):
 
     if request.method == "POST":
         code = request.POST.get("otp")
-        otp_obj = EmailOTP.objects.filter(user=user).last()
 
-        if otp_obj and otp_obj.otp == code:
+        otp_obj = EmailOTP.objects.filter(user=user).first()
+
+        if not otp_obj:
+            return render(
+                request,
+                "tracker/verify_otp.html",
+                {"error": "OTP expired. Please request again."}
+            )
+
+        # ⏰ Expiry check (5 minutes)
+        if timezone.now() > otp_obj.created_at + timedelta(minutes=5):
+            otp_obj.delete()
+            return render(
+                request,
+                "tracker/verify_otp.html",
+                {"error": "OTP expired. Please request again."}
+            )
+
+        if otp_obj.otp == code:
+            otp_obj.delete()
+            del request.session["otp_user_id"]
             login(request, user)
             return redirect("home")
 
