@@ -5,6 +5,7 @@ import json
 import random
 from django.core.mail import send_mail
 from django.contrib.auth import login
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
@@ -131,19 +132,31 @@ def email_login(request):
             otp = str(random.randint(100000, 999999))
             EmailOTP.objects.create(user=user, otp=otp)
 
-            send_mail(
-                subject="Your Expense Tracker Login Code",
-                message=(
-                    f"Hello {user.username},\n\n"
-                    f"Your One-Time Password (OTP) for login is:\n\n"
-                    f"{otp}\n\n"
-                    f"This code is valid for only a few minutes.\n\n"
-                    f"If this was NOT you, please ignore this email.\n\n"
-                    f"Stay safe,\nExpense Tracker Team"
-                ),
-                from_email="trackexpenseteam@gmail.com",
-                recipient_list=[email],
-            )
+            if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+                return render(request, "tracker/login_email.html", {
+                    "error": "Email service is not configured. Please contact support."
+                })
+
+            try:
+                send_mail(
+                    subject="Your Expense Tracker Login Code",
+                    message=(
+                        f"Hello {user.username},\n\n"
+                        f"Your One-Time Password (OTP) for login is:\n\n"
+                        f"{otp}\n\n"
+                        f"This code is valid for only a few minutes.\n\n"
+                        f"If this was NOT you, please ignore this email.\n\n"
+                        f"Stay safe,\nExpense Tracker Team"
+                    ),
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+            except Exception:
+                return render(request, "tracker/login_email.html", {
+                    "error": "Unable to send OTP email right now. Please try again later."
+                })
+
 
             request.session["otp_user_id"] = user.id
             return redirect("verify_otp")
@@ -176,19 +189,31 @@ def email_login(request):
         otp = str(random.randint(100000,999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
-        send_mail(
-            subject="🔐 Your Expense Tracker Login Code",
-            message=(
-                f"Hello {user.username},\n\n"
-                f"Your One-Time Password (OTP) for login is:\n\n"
-                f"👉 {otp}\n\n"
-                f"This code is valid for only a few minutes.\n\n"
-                f"If this was NOT you, please ignore this email.\n\n"
-                f"Stay safe,\nExpense Tracker Team"
-            ),
-            from_email="trackexpenseteam@gmail.com",
-            recipient_list=[email],
-        )
+        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+            return render(request, "tracker/login_email.html", {
+                "error": "Email service is not configured. Please contact support."
+            })
+
+        try:
+            send_mail(
+                subject="Your Expense Tracker Login Code",
+                message=(
+                    f"Hello {user.username},\n\n"
+                    f"Your One-Time Password (OTP) for login is:\n\n"
+                    f"{otp}\n\n"
+                    f"This code is valid for only a few minutes.\n\n"
+                    f"If this was NOT you, please ignore this email.\n\n"
+                    f"Stay safe,\nExpense Tracker Team"
+                ),
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception:
+            return render(request, "tracker/login_email.html", {
+                "error": "Unable to send OTP email right now. Please try again later."
+            })
+
 
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
