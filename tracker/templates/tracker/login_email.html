@@ -123,6 +123,7 @@ to{transform:scale(1);opacity:1;}
 
 <form method="post">
 {% csrf_token %}
+<input type="hidden" name="mode" value="login">
 <input type="email" name="email" placeholder="Enter your Gmail" required>
 <button>Send Verification Code</button>
 </form>

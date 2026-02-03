@@ -30,9 +30,8 @@ class Transaction(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=100, blank=True)
-    image = models.ImageField(upload_to='profiles/', default='profiles/default.png')
-
+    full_name = models.CharField(max_length=100)
+    image = models.ImageField(upload_to="profiles/", default="profiles/default.png")
     def __str__(self):
         return self.user.username
     

@@ -1,30 +1,41 @@
-from django.shortcuts import render, redirect
-from .models import Transaction
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Transaction, Profile, EmailOTP
 from django.contrib.auth.decorators import login_required
 import json
-from .models import Profile
 import random
 from django.core.mail import send_mail
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import login
 from django.contrib.auth.models import User
-from .models import EmailOTP
-from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 
-@login_required
 def index(request):
     selected_month = request.GET.get('month')
 
     if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect("email_login")
+
         Transaction.objects.create(
-            user=request.user,   # 🔴 THIS IS THE KEY LINE
-            type=request.POST['type'],
-            amount=request.POST['amount'],
-            category=request.POST['category'],
-            date=request.POST['date']
+            user=request.user,
+            type=request.POST.get('type'),
+            amount=request.POST.get('amount'),
+            category=request.POST.get('category'),
+            date=request.POST.get('date')
         )
+
         return redirect('/')
+
+    if not request.user.is_authenticated:
+        return render(request, "index.html", {
+            "transactions": Transaction.objects.none(),
+            "total_income": 0,
+            "total_expense": 0,
+            "balance": 0,
+            "selected_month": selected_month,
+            "chart_labels": json.dumps([]),
+            "chart_values": json.dumps([]),
+        })
 
     # 🔴 Only fetch logged-in user's data
     transactions = Transaction.objects.filter(user=request.user)
@@ -37,29 +48,33 @@ def index(request):
     total_expense = sum(t.amount for t in transactions if t.type.lower() == "expense")
     balance = total_income - total_expense
 
-    sent_flag = request.session.get("low_balance_email_sent", False)
+    last_notified = request.session.get("low_balance_last_notified")
 
-    if balance <= 100 and not sent_flag:
-     send_mail(
-        subject="⚠ Low Balance Alert - Expense Tracker",
-        message=(
-            f"Hello {request.user.username},\n\n"
-            f"⚠ Your balance has dropped to ₹{balance}.\n\n"
-            f"This is a friendly reminder to control your expenses "
-            f"and try saving some money.\n\n"
-            f"Tip: Track daily expenses and set a monthly budget.\n\n"
-            f"Stay financially strong 💪\n"
-            f"Expense Tracker Team"
-        ),
-        from_email="yourgmail@gmail.com",
-        recipient_list=[request.user.email],
-        fail_silently=True,
-    )
-    request.session["low_balance_email_sent"] = True
+    should_notify = False
+    if balance <= 0:
+        should_notify = True
+    elif last_notified is None:
+        should_notify = balance <= 50
+    else:
+        should_notify = balance <= (last_notified - 50)
 
-    if balance > 100:
-     request.session["low_balance_email_sent"] = False
-
+    if should_notify:
+        send_mail(
+            subject="Low Balance Alert - Expense Tracker",
+            message=(
+                f"Hello {request.user.username},\n\n"
+                f"Your balance has dropped to INR {balance}.\n\n"
+                f"This is a friendly reminder to control your expenses "
+                f"and try saving some money.\n\n"
+                f"Tip: Track daily expenses and set a monthly budget.\n\n"
+                f"Stay financially strong\n"
+                f"Expense Tracker Team"
+            ),
+            from_email="yourgmail@gmail.com",
+            recipient_list=[request.user.email],
+            fail_silently=True,
+        )
+        request.session["low_balance_last_notified"] = balance
 
     category_data = {}
     for t in transactions:
@@ -80,8 +95,9 @@ def index(request):
 
 @login_required
 def delete_transaction(request, id):
-    Transaction.objects.get(id=id, user=request.user).delete()
-    return redirect('/')
+    transaction = get_object_or_404(Transaction, id=id, user=request.user)
+    transaction.delete()
+    return redirect("/")
 
 @login_required
 def profile(request):
@@ -103,20 +119,61 @@ def edit_profile(request):
 
 def email_login(request):
     if request.method == "POST":
+        mode = request.POST.get("mode", "signup")
         email = request.POST.get("email")
+        if mode == "login":
+            user = User.objects.filter(email=email).first()
+            if not user:
+                return render(request, "tracker/login_email.html", {
+                    "error": "Account not found. Please create an account first."
+                })
 
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return render(
-                request,
-                "tracker/login_email.html",
-                {"error": "Email not registered"}
+            otp = str(random.randint(100000, 999999))
+            EmailOTP.objects.create(user=user, otp=otp)
+
+            send_mail(
+                subject="Your Expense Tracker Login Code",
+                message=(
+                    f"Hello {user.username},\n\n"
+                    f"Your One-Time Password (OTP) for login is:\n\n"
+                    f"{otp}\n\n"
+                    f"This code is valid for only a few minutes.\n\n"
+                    f"If this was NOT you, please ignore this email.\n\n"
+                    f"Stay safe,\nExpense Tracker Team"
+                ),
+                from_email="trackexpenseteam@gmail.com",
+                recipient_list=[email],
             )
 
-        # 🔥 Delete old OTPs for this user
-        EmailOTP.objects.filter(user=user).delete()
+            request.session["otp_user_id"] = user.id
+            return redirect("verify_otp")
 
-        otp = str(random.randint(100000, 999999))
+        full_name = request.POST.get("full_name")
+        password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm_password")
+
+        if password != confirm_password:
+            return render(request, "tracker/login_email.html", {
+                "error": "Passwords do not match"
+            })
+
+        user = User.objects.filter(email=email).first()
+
+        if user:
+            return render(request, "tracker/login_email.html", {
+                "error": "Account already exists. Please log in."
+            })
+
+        # create user
+        username = email.split("@")[0]
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password
+        )
+        Profile.objects.filter(user=user).update(full_name=full_name)
+
+        otp = str(random.randint(100000,999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
         send_mail(
@@ -126,10 +183,8 @@ def email_login(request):
                 f"Your One-Time Password (OTP) for login is:\n\n"
                 f"👉 {otp}\n\n"
                 f"This code is valid for only a few minutes.\n\n"
-                f"If this was NOT you, please ignore this email. "
-                f"Someone may have tried to access your account.\n\n"
-                f"Stay safe,\n"
-                f"Expense Tracker Team"
+                f"If this was NOT you, please ignore this email.\n\n"
+                f"Stay safe,\nExpense Tracker Team"
             ),
             from_email="trackexpenseteam@gmail.com",
             recipient_list=[email],

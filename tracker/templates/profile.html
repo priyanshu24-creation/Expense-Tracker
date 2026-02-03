@@ -58,6 +58,11 @@
         .signout {
             color: #4f46e5;
             margin-top: 20px;
+            background: none;
+            border: none;
+            padding: 0;
+            font: inherit;
+            cursor: pointer;
         }
 
         /* MAIN CARD */
@@ -141,7 +146,10 @@
             <li><a href="#">My Transactions</a></li>
             <li><a href="#">Help & Support</a></li>
         </ul>
-        <a href="{% url 'logout' %}" class="signout">Sign Out</a>
+        <form method="post" action="{% url 'logout' %}">
+{% csrf_token %}
+<button type="submit" class="signout">Sign Out</button>
+</form>
     </div>
 
     <!-- MAIN CONTENT -->

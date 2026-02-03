@@ -113,6 +113,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+AUTH_USER_MODEL = "auth.User"
+
 
 # ======================
 # INTERNATIONALIZATION
@@ -158,9 +160,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # AUTH REDIRECTS
 # ======================
 
-LOGIN_URL = '/login/'
+
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/'
 
 
 # ======================
