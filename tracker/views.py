@@ -60,23 +60,22 @@ def index(request):
     sent_flag = request.session.get("low_balance_email_sent", False)
 
     if balance <= 100 and not sent_flag and request.user.email:
-        subject = "⚠ Low Balance Alert - Expense Tracker"
+        subject = "Expense Tracker Low Balance Alert"
         message = (
             f"Hello {request.user.username},\n\n"
-            f"⚠ Your balance is ₹{balance}.\n\n"
+            f"Your balance is ₹{balance}.\n"
             f"Please control your expenses.\n\n"
-            f"Expense Tracker Team"
+            f"- Expense Tracker"
         )
 
         try:
             send_mail(
                 subject,
                 message,
-                settings.DEFAULT_FROM_EMAIL,   # ✅ fixed
+                settings.DEFAULT_FROM_EMAIL,
                 [request.user.email],
                 fail_silently=False,
             )
-            print("LOW BALANCE EMAIL SENT")
             request.session["low_balance_email_sent"] = True
 
         except Exception as e:
@@ -152,11 +151,8 @@ def email_login(request):
         confirm_password = request.POST.get("confirm_password")
 
         if password != confirm_password:
-            return render(
-                request,
-                "tracker/login_email.html",
-                {"error": "Passwords do not match"}
-            )
+            return render(request, "tracker/login_email.html",
+                          {"error": "Passwords do not match"})
 
         user = User.objects.filter(email=email).first()
 
@@ -167,19 +163,25 @@ def email_login(request):
                 email=email,
                 password=password
             )
-            Profile.objects.create(user=user, full_name=full_name)
+            Profile.objects.create(user=user, full_name confirmed := full_name)
+
+        # ✅ delete old OTPs first
+        EmailOTP.objects.filter(user=user).delete()
 
         otp = str(random.randint(100000, 999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
-        subject = "🔐 Your Expense Tracker Login Code"
-        message = f"Your OTP is: {otp}"
+        subject = "Expense Tracker OTP Code"
+        message = f"""Your login code is: {otp}
+
+This code expires in 5 minutes.
+If you did not request this, ignore this email."""
 
         try:
             send_mail(
                 subject,
                 message,
-                settings.DEFAULT_FROM_EMAIL,   # ✅ fixed
+                settings.DEFAULT_FROM_EMAIL,
                 [email],
                 fail_silently=False,
             )
@@ -188,11 +190,8 @@ def email_login(request):
         except Exception as e:
             print("OTP EMAIL FAILED:", e)
             traceback.print_exc()
-            return render(
-                request,
-                "tracker/login_email.html",
-                {"error": "Email send failed"}
-            )
+            return render(request, "tracker/login_email.html",
+                          {"error": "Email send failed"})
 
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
@@ -214,22 +213,18 @@ def verify_otp(request):
 
     if request.method == "POST":
         code = request.POST.get("otp")
-        otp_obj = EmailOTP.objects.filter(user=user).first()
+
+        # ✅ get newest OTP only
+        otp_obj = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
 
         if not otp_obj:
-            return render(
-                request,
-                "tracker/verify_otp.html",
-                {"error": "OTP expired"}
-            )
+            return render(request, "tracker/verify_otp.html",
+                          {"error": "OTP expired"})
 
         if timezone.now() > otp_obj.created_at + timedelta(minutes=5):
             otp_obj.delete()
-            return render(
-                request,
-                "tracker/verify_otp.html",
-                {"error": "OTP expired"}
-            )
+            return render(request, "tracker/verify_otp.html",
+                          {"error": "OTP expired"})
 
         if otp_obj.otp == code:
             otp_obj.delete()
@@ -237,10 +232,7 @@ def verify_otp(request):
             login(request, user)
             return redirect("home")
 
-        return render(
-            request,
-            "tracker/verify_otp.html",
-            {"error": "Invalid code"}
-        )
+        return render(request, "tracker/verify_otp.html",
+                      {"error": "Invalid code"})
 
     return render(request, "tracker/verify_otp.html")
