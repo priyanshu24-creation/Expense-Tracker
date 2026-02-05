@@ -72,7 +72,7 @@ def index(request):
             send_mail(
                 subject,
                 message,
-                settings.EMAIL_HOST_USER,
+                settings.DEFAULT_FROM_EMAIL,   # ✅ fixed
                 [request.user.email],
                 fail_silently=False,
             )
@@ -179,7 +179,7 @@ def email_login(request):
             send_mail(
                 subject,
                 message,
-                settings.EMAIL_HOST_USER,
+                settings.DEFAULT_FROM_EMAIL,   # ✅ fixed
                 [email],
                 fail_silently=False,
             )

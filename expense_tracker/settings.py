@@ -81,7 +81,7 @@ ROOT_URLCONF = 'expense_tracker.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],   # supports project-level templates
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -146,25 +146,19 @@ USE_TZ = True
 
 
 # ======================
-# EMAIL — GMAIL SMTP
+# EMAIL — SENDGRID API
 # ======================
 
-# Allow overriding the backend via env. Default to SMTP in all environments.
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND",
-    "django.core.mail.backends.smtp.EmailBackend",
-)
+EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
 
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+if not SENDGRID_API_KEY:
+    raise RuntimeError("SENDGRID_API_KEY not set in environment variables")
 
-EMAIL_TIMEOUT = 10
-
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+if not DEFAULT_FROM_EMAIL:
+    raise RuntimeError("DEFAULT_FROM_EMAIL not set in environment variables")
 
 
 # ======================
