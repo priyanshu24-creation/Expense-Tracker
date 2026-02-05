@@ -3,7 +3,7 @@ from .models import Transaction, Profile, EmailOTP
 from django.contrib.auth.decorators import login_required
 import json
 import random
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.contrib.auth import login
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -22,6 +22,7 @@ def index(request):
             type=request.POST.get('type'),
             amount=request.POST.get('amount'),
             category=request.POST.get('category'),
+            payment_mode=request.POST.get('payment_mode', 'online'),
             date=request.POST.get('date')
         )
 
@@ -49,6 +50,17 @@ def index(request):
     total_expense = sum(t.amount for t in transactions if t.type.lower() == "expense")
     balance = total_income - total_expense
 
+    online_transactions = transactions.filter(payment_mode="online")
+    cash_transactions = transactions.filter(payment_mode="cash")
+
+    online_income = sum(t.amount for t in online_transactions if t.type.lower() == "income")
+    online_expense = sum(t.amount for t in online_transactions if t.type.lower() == "expense")
+    online_balance = online_income - online_expense
+
+    cash_income = sum(t.amount for t in cash_transactions if t.type.lower() == "income")
+    cash_expense = sum(t.amount for t in cash_transactions if t.type.lower() == "expense")
+    cash_balance = cash_income - cash_expense
+
     last_notified = request.session.get("low_balance_last_notified")
 
     should_notify = False
@@ -71,7 +83,8 @@ def index(request):
                 f"Stay financially strong\n"
                 f"Expense Tracker Team"
             ),
-            from_email="yourgmail@gmail.com",
+            # Use the configured sender to avoid Gmail SMTP "from" mismatch.
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[request.user.email],
             fail_silently=True,
         )
@@ -88,6 +101,12 @@ def index(request):
         "total_income": total_income,
         "total_expense": total_expense,
         "balance": balance,
+        "online_income": online_income,
+        "online_expense": online_expense,
+        "online_balance": online_balance,
+        "cash_income": cash_income,
+        "cash_expense": cash_expense,
+        "cash_balance": cash_balance,
         "selected_month": selected_month,
         "chart_labels": json.dumps(list(category_data.keys())),
         "chart_values": json.dumps(list(category_data.values())),
@@ -96,8 +115,9 @@ def index(request):
 
 @login_required
 def delete_transaction(request, id):
-    transaction = get_object_or_404(Transaction, id=id, user=request.user)
-    transaction.delete()
+    transaction = Transaction.objects.filter(id=id, user=request.user).first()
+    if transaction:
+        transaction.delete()
     return redirect("/")
 
 @login_required
@@ -132,32 +152,34 @@ def email_login(request):
             otp = str(random.randint(100000, 999999))
             EmailOTP.objects.create(user=user, otp=otp)
 
+            message = (
+                f"Hello {user.username},\n\n"
+                f"Your One-Time Password (OTP) for login is:\n\n"
+                f"{otp}\n\n"
+                f"This code is valid for only a few minutes.\n\n"
+                f"If this was NOT you, please ignore this email.\n\n"
+                f"Stay safe,\nExpense Tracker Team"
+            )
+
             if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
                 return render(request, "tracker/login_email.html", {
                     "error": "Email service is not configured. Please contact support."
                 })
 
             try:
+                connection = get_connection(timeout=getattr(settings, "EMAIL_TIMEOUT", 10))
                 send_mail(
                     subject="Your Expense Tracker Login Code",
-                    message=(
-                        f"Hello {user.username},\n\n"
-                        f"Your One-Time Password (OTP) for login is:\n\n"
-                        f"{otp}\n\n"
-                        f"This code is valid for only a few minutes.\n\n"
-                        f"If this was NOT you, please ignore this email.\n\n"
-                        f"Stay safe,\nExpense Tracker Team"
-                    ),
-                    from_email=settings.EMAIL_HOST_USER,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[email],
                     fail_silently=False,
+                    connection=connection,
                 )
             except Exception:
                 return render(request, "tracker/login_email.html", {
                     "error": "Unable to send OTP email right now. Please try again later."
                 })
-
-
             request.session["otp_user_id"] = user.id
             return redirect("verify_otp")
 
@@ -189,32 +211,34 @@ def email_login(request):
         otp = str(random.randint(100000,999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
+        message = (
+            f"Hello {user.username},\n\n"
+            f"Your One-Time Password (OTP) for login is:\n\n"
+            f"{otp}\n\n"
+            f"This code is valid for only a few minutes.\n\n"
+            f"If this was NOT you, please ignore this email.\n\n"
+            f"Stay safe,\nExpense Tracker Team"
+        )
+
         if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
             return render(request, "tracker/login_email.html", {
                 "error": "Email service is not configured. Please contact support."
             })
 
         try:
+            connection = get_connection(timeout=getattr(settings, "EMAIL_TIMEOUT", 10))
             send_mail(
                 subject="Your Expense Tracker Login Code",
-                message=(
-                    f"Hello {user.username},\n\n"
-                    f"Your One-Time Password (OTP) for login is:\n\n"
-                    f"{otp}\n\n"
-                    f"This code is valid for only a few minutes.\n\n"
-                    f"If this was NOT you, please ignore this email.\n\n"
-                    f"Stay safe,\nExpense Tracker Team"
-                ),
-                from_email=settings.EMAIL_HOST_USER,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
                 fail_silently=False,
+                connection=connection,
             )
         except Exception:
             return render(request, "tracker/login_email.html", {
                 "error": "Unable to send OTP email right now. Please try again later."
             })
-
-
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
 
@@ -231,7 +255,7 @@ def verify_otp(request):
     if request.method == "POST":
         code = request.POST.get("otp")
 
-        otp_obj = EmailOTP.objects.filter(user=user).first()
+        otp_obj = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
 
         if not otp_obj:
             return render(
@@ -240,8 +264,8 @@ def verify_otp(request):
                 {"error": "OTP expired. Please request again."}
             )
 
-        # ⏰ Expiry check (5 minutes)
-        if timezone.now() > otp_obj.created_at + timedelta(minutes=5):
+        # ⏰ Expiry check (2 minutes)
+        if timezone.now() > otp_obj.created_at + timedelta(minutes=2):
             otp_obj.delete()
             return render(
                 request,

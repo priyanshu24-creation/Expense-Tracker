@@ -15,15 +15,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-dev-key")
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+
+# ======================
+# HOSTS / CSRF
+# ======================
+
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}"]
-else:
-    CSRF_TRUSTED_ORIGINS = []
+
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{h}" for h in ALLOWED_HOSTS
+    if h not in ("127.0.0.1", "localhost")
+]
 
 
 # ======================
@@ -48,11 +59,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -67,7 +81,7 @@ ROOT_URLCONF = 'expense_tracker.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  
+        'DIRS': [BASE_DIR / "templates"],   # supports project-level templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -84,7 +98,7 @@ WSGI_APPLICATION = 'expense_tracker.wsgi.application'
 
 
 # ======================
-# DATABASE (PostgreSQL ONLY)
+# DATABASE
 # ======================
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
@@ -126,15 +140,31 @@ AUTH_USER_MODEL = "auth.User"
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
+
 USE_I18N = True
 USE_TZ = True
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+# ======================
+# EMAIL — GMAIL SMTP
+# ======================
+
+# Allow overriding the backend via env. Default to SMTP in all environments.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend",
+)
+
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
+EMAIL_TIMEOUT = 10
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 # ======================
@@ -145,7 +175,7 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     BASE_DIR / "tracker/static"
-]
+] if (BASE_DIR / "tracker/static").exists() else []
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -163,7 +193,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ======================
 # AUTH REDIRECTS
 # ======================
-
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'

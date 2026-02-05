@@ -279,6 +279,9 @@ grid-template-columns:repeat(3,1fr);
 gap:15px;
 margin-bottom:20px;
 }
+.stats.stats-2{
+grid-template-columns:repeat(2,1fr);
+}
 .card{
 padding:22px;
 border-radius:18px;
@@ -570,7 +573,7 @@ to{transform:scale(1);opacity:1;}
 <div class="user-area">
 {% if request.user.is_authenticated %}
 <div class="user-link" onclick="toggleDrawer(true)" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false">
-<img class="user-avatar" src="{{ request.user.profile.image.url }}" alt="Profile photo">
+<img class="user-avatar" src="{{ request.user.profile.profile_image_url }}" alt="Profile photo">
 <span>{{ request.user.username }}</span>
 </div>
 {% else %}
@@ -591,7 +594,7 @@ to{transform:scale(1);opacity:1;}
 <div class="container reveal">
 
 <div class="profile-card reveal delay-1">
-<img src="{{ request.user.profile.image.url }}" alt="Profile photo">
+<img src="{{ request.user.profile.profile_image_url }}" alt="Profile photo">
 <div class="profile-meta">
 <span class="name">{{ request.user.profile.full_name }}</span>
 <span class="email">{{ request.user.email }}</span>
@@ -603,11 +606,18 @@ to{transform:scale(1);opacity:1;}
 
 <form method="POST" class="form-card reveal delay-2">
 {% csrf_token %}
-<select name="type"><option>Income</option><option>Expense</option></select>
+<select name="type">
+<option value="income">Income</option>
+<option value="expense">Expense</option>
+</select>
+<select name="payment_mode">
+<option value="online">Online Money</option>
+<option value="cash">Cash Money</option>
+</select>
 <input type="number" name="amount" placeholder="Amount" required>
 <select name="category">
-<option>Food</option><option>Transport</option><option>Rent</option>
-<option>Shopping</option><option>Salary</option><option>Other</option>
+<option value="food">Food</option><option value="transport">Transport</option><option value="rent">Rent</option>
+<option value="shopping">Shopping</option><option value="salary">Salary</option><option value="other">Other</option>
 </select>
 <input type="date" name="date" required>
 <button>Add</button>
@@ -622,6 +632,11 @@ to{transform:scale(1);opacity:1;}
 <div class="card">Income <span class="count">{{ total_income }}</span></div>
 <div class="card">Expense <span class="count">{{ total_expense }}</span></div>
 <div class="card">Balance <span class="count">{{ balance }}</span></div>
+</div>
+
+<div class="stats stats-2 reveal">
+<div class="card">Online Balance <span class="count">{{ online_balance }}</span></div>
+<div class="card">Cash Balance <span class="count">{{ cash_balance }}</span></div>
 </div>
 
 <ul class="reveal">
@@ -692,7 +707,7 @@ options:{plugins:{legend:{position:'bottom'}}}
 <div id="drawerScrim" class="drawer-scrim" onclick="toggleDrawer(false)"></div>
 <aside id="profileDrawer" class="drawer" aria-hidden="true">
 <div class="drawer-header">
-<img src="{{ request.user.profile.image.url }}" alt="Profile photo">
+<img src="{{ request.user.profile.profile_image_url }}" alt="Profile photo">
 <div class="drawer-title">
 <span class="name">{{ request.user.profile.full_name }}</span>
 <span class="email">{{ request.user.email }}</span>
