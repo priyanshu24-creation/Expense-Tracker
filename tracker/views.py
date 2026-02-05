@@ -163,7 +163,8 @@ def email_login(request):
                 email=email,
                 password=password
             )
-            Profile.objects.create(user=user, full_name confirmed := full_name)
+            Profile.objects.create(user=user, full_name=full_name)
+
 
         # ✅ delete old OTPs first
         EmailOTP.objects.filter(user=user).delete()
