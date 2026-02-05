@@ -143,21 +143,32 @@
         <h3>My Account</h3>
         <ul>
             <li class="active">Profile</li>
-            <li><a href="#">My Transactions</a></li>
+            <li><a href="/">My Transactions</a></li>
             <li><a href="#">Help & Support</a></li>
         </ul>
+
         <form method="post" action="{% url 'logout' %}">
-{% csrf_token %}
-<button type="submit" class="signout">Sign Out</button>
-</form>
+            {% csrf_token %}
+            <button type="submit" class="signout">Sign Out</button>
+        </form>
     </div>
 
     <!-- MAIN CONTENT -->
     <div class="main-card">
 
         <div class="profile-header">
-            <img src="{{ request.user.profile.profile_image_url }}">
+
+            {% if request.user.profile and request.user.profile.profile_image_url %}
+                <img src="{{ request.user.profile.profile_image_url }}"
+                     alt="Profile Photo"
+                     onerror="this.src='/static/tracker/default-avatar.png';">
+            {% else %}
+                <img src="/static/tracker/default-avatar.png"
+                     alt="Default Profile Photo">
+            {% endif %}
+
             <h1>{{ request.user.profile.full_name }}</h1>
+
         </div>
 
         <div class="section">

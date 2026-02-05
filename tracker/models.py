@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+from django.contrib.staticfiles.storage import staticfiles_storage
 
 class Transaction(models.Model):
     TYPE_CHOICES = (
@@ -38,12 +39,13 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name = models.CharField(max_length=100)
     image = models.ImageField(upload_to="profiles/", default="profiles/default.png")
+    last_username_change_at = models.DateTimeField(null=True, blank=True)
     def profile_image_url(self):
         name = getattr(self.image, "name", "")
         storage = getattr(self.image, "storage", None)
         if name and storage and storage.exists(name):
             return self.image.url
-        return f"{settings.STATIC_URL}tracker/logo.png"
+        return staticfiles_storage.url("tracker/logo.png")
     def __str__(self):
         return self.user.username
     

@@ -112,11 +112,23 @@
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
+        {% if error %}
+        <div style="background:#fee2e2;color:#991b1b;padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:14px;">
+            {{ error }}
+        </div>
+        {% endif %}
+
         <label>Full Name</label>
         <input type="text" name="full_name" value="{{ request.user.profile.full_name }}" required>
 
         <label>Username</label>
-        <input type="text" value="{{ request.user.username }}" readonly>
+        <input type="text" name="username" value="{{ request.user.username }}" required>
+        <small style="display:block;margin-top:6px;color:#555;font-size:12px;">
+            You can change your username once, then again 30 days later.
+            {% if next_username_change_at %}
+            Next change available: {{ next_username_change_at|date:"M d, Y" }}.
+            {% endif %}
+        </small>
 
         <label>Email</label>
         <input type="email" value="{{ request.user.email }}" readonly>
