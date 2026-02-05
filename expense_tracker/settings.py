@@ -149,7 +149,8 @@ USE_TZ = True
 # EMAIL — SENDGRID API
 # ======================
 
-EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
+EMAIL_BACKEND = "sendgrid_django.SendgridBackend"
+
 
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
