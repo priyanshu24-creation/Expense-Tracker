@@ -12,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ======================
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -93,7 +94,7 @@ if DATABASE_URL:
         "default": dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=not DEBUG,
+            ssl_require=True,
         )
     }
 else:
@@ -149,16 +150,13 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # ======================
-# EMAIL — SENDGRID SMTP
+# EMAIL — SAFE MODE (NO SERVER CRASH)
 # ======================
+# This prevents Render worker timeout.
+# OTP will print in logs instead of real email.
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.sendgrid.net"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "apikey"
-EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "trackexpenseteam@gmail.com"
 
 # ======================
 # DEFAULT PK
