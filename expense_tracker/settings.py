@@ -128,7 +128,7 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 # ======================
-# STATIC
+# STATIC FILES
 # ======================
 
 STATIC_URL = "/static/"
@@ -142,14 +142,14 @@ if tracker_static.exists():
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 # ======================
-# MEDIA
+# MEDIA FILES
 # ======================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # ======================
-# EMAIL — SENDGRID SMTP (REAL OTP DELIVERY)
+# EMAIL — SENDGRID SMTP (REAL DELIVERY)
 # ======================
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
