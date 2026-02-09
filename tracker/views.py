@@ -18,7 +18,7 @@ from .models import Transaction, Profile, EmailOTP
 # =========================
 
 def index(request):
-    selected_month = request.GET.get('month')
+    selected_month = request.GET.get("month")
 
     if request.method == "POST":
         if not request.user.is_authenticated:
@@ -26,13 +26,13 @@ def index(request):
 
         Transaction.objects.create(
             user=request.user,
-            type=request.POST.get('type'),
-            amount=request.POST.get('amount'),
-            category=request.POST.get('category'),
-            payment_mode=request.POST.get('payment_mode', 'online'),
-            date=request.POST.get('date')
+            type=request.POST.get("type"),
+            amount=request.POST.get("amount"),
+            category=request.POST.get("category"),
+            payment_mode=request.POST.get("payment_mode", "online"),
+            date=request.POST.get("date"),
         )
-        return redirect('/')
+        return redirect("/")
 
     if not request.user.is_authenticated:
         return render(request, "index.html", {
@@ -49,21 +49,74 @@ def index(request):
 
     transactions = Transaction.objects.filter(user=request.user)
 
+    if selected_month:
+        year, month = selected_month.split("-")
+        transactions = transactions.filter(date__year=year, date__month=month)
+
     total_income = sum(t.amount for t in transactions if t.type == "income")
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
     balance = total_income - total_expense
+
+    online_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "online")
+    online_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "online")
+    cash_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "cash")
+    cash_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "cash")
+
+    online_balance = online_income - online_expense
+    cash_balance = cash_income - cash_expense
+
+    # chart data
+    category_data = {}
+    for t in transactions:
+        if t.type == "expense":
+            label = t.get_category_display()
+            category_data[label] = category_data.get(label, 0) + t.amount
 
     return render(request, "index.html", {
         "transactions": transactions,
         "total_income": total_income,
         "total_expense": total_expense,
         "balance": balance,
-        "online_balance": 0,
-        "cash_balance": 0,
+        "online_balance": online_balance,
+        "cash_balance": cash_balance,
         "selected_month": selected_month,
-        "chart_labels": json.dumps([]),
-        "chart_values": json.dumps([]),
+        "chart_labels": json.dumps(list(category_data.keys())),
+        "chart_values": json.dumps(list(category_data.values())),
     })
+
+
+# =========================
+# DELETE TRANSACTION
+# =========================
+
+@login_required
+def delete_transaction(request, id):
+    get_object_or_404(Transaction, id=id, user=request.user).delete()
+    return redirect("/")
+
+
+# =========================
+# PROFILE
+# =========================
+
+@login_required
+def profile(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    return render(request, "profile.html", {"profile": profile})
+
+
+@login_required
+def edit_profile(request):
+    profile = request.user.profile
+
+    if request.method == "POST":
+        profile.full_name = request.POST.get("full_name")
+        if request.FILES.get("image"):
+            profile.image = request.FILES["image"]
+        profile.save()
+        return redirect("home")
+
+    return render(request, "edit_profile.html", {"profile": profile})
 
 
 # =========================
@@ -87,19 +140,20 @@ def email_login(request):
             user = User.objects.create_user(
                 username=email.split("@")[0],
                 email=email,
-                password=password
+                password=password,
             )
             Profile.objects.update_or_create(
                 user=user,
                 defaults={"full_name": full_name}
             )
 
+        # remove old OTPs
         EmailOTP.objects.filter(user=user).delete()
 
         otp = str(random.randint(100000, 999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
-        print("SENDING OTP:", otp, "TO:", email)
+        print("OTP:", otp, "EMAIL:", email)
 
         send_mail(
             subject="Your OTP Code",
