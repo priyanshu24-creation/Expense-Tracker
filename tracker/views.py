@@ -41,6 +41,8 @@ def index(request):
             "total_income": 0,
             "total_expense": 0,
             "balance": 0,
+            "online_balance": 0,
+            "cash_balance": 0,
             "selected_month": selected_month,
             "chart_labels": json.dumps([]),
             "chart_values": json.dumps([]),
@@ -55,6 +57,25 @@ def index(request):
     total_income = sum(t.amount for t in transactions if t.type == "income")
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
     balance = total_income - total_expense
+
+    online_income = sum(
+        t.amount for t in transactions
+        if t.type == "income" and t.payment_mode == "online"
+    )
+    online_expense = sum(
+        t.amount for t in transactions
+        if t.type == "expense" and t.payment_mode == "online"
+    )
+    cash_income = sum(
+        t.amount for t in transactions
+        if t.type == "income" and t.payment_mode == "cash"
+    )
+    cash_expense = sum(
+        t.amount for t in transactions
+        if t.type == "expense" and t.payment_mode == "cash"
+    )
+    online_balance = online_income - online_expense
+    cash_balance = cash_income - cash_expense
 
     # LOW BALANCE EMAIL
     sent_flag = request.session.get("low_balance_email_sent", False)
@@ -85,6 +106,8 @@ def index(request):
         "total_income": total_income,
         "total_expense": total_expense,
         "balance": balance,
+        "online_balance": online_balance,
+        "cash_balance": cash_balance,
         "selected_month": selected_month,
         "chart_labels": json.dumps(list(category_data.keys())),
         "chart_values": json.dumps(list(category_data.values())),
@@ -166,10 +189,16 @@ def email_login(request):
                 settings.DEFAULT_FROM_EMAIL,
                 [email],
             )
-        except Exception:
+        except Exception as exc:
             traceback.print_exc()
-            return render(request, "tracker/login_email.html",
-                          {"error": "Email send failed"})
+            error_msg = "Email send failed"
+            if settings.DEBUG:
+                error_msg = f"Email send failed: {exc}"
+            return render(
+                request,
+                "tracker/login_email.html",
+                {"error": error_msg},
+            )
 
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")

@@ -40,12 +40,13 @@ class Profile(models.Model):
     full_name = models.CharField(max_length=100)
     image = models.ImageField(upload_to="profiles/", default="profiles/default.png")
     last_username_change_at = models.DateTimeField(null=True, blank=True)
+    @property
     def profile_image_url(self):
         name = getattr(self.image, "name", "")
         storage = getattr(self.image, "storage", None)
         if name and storage and storage.exists(name):
             return self.image.url
-        return staticfiles_storage.url("tracker/logo.png")
+        return f"{settings.MEDIA_URL}profiles/default.png"
     def __str__(self):
         return self.user.username
     

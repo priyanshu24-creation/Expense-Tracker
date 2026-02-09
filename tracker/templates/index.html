@@ -3,7 +3,7 @@
 <html>
 <head>
 <title>Expense Tracker</title>
-<link rel="icon" type="image/png" href="{% static 'tracker/logo.png' %}?v=2">
+<link rel="icon" type="image/png" href="{% static 'tracker/logo.png' %}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -234,6 +234,25 @@ flex-direction:column;
 align-items:flex-start;
 gap:6px;
 }
+.container{padding:18px;}
+.topbar{padding:12px 16px;}
+.logo{font-size:18px;}
+.logo-img{width:32px;height:32px;}
+.slogan{font-size:11px;}
+.auth-btn{padding:6px 12px;font-size:13px;border-radius:16px;}
+.hero{padding:70px 16px;}
+.hero h1{font-size:30px;}
+.hero p{font-size:14px;}
+.hero button{padding:10px 18px;font-size:14px;border-radius:22px;}
+.form-card button{width:auto;padding:8px 14px;font-size:13px;border-radius:10px;}
+.filter-card{padding:12px 14px;}
+.filter-card button{padding:8px 12px;font-size:13px;border-radius:10px;}
+.profile-actions a{padding:6px 10px;font-size:12px;border-radius:10px;}
+.drawer-actions a,.drawer-actions button{padding:8px 10px;font-size:13px;}
+.stats{grid-template-columns:1fr;gap:10px;}
+.stats.stats-2{grid-template-columns:1fr;}
+.card{padding:16px;font-size:15px;border-radius:14px;}
+.count{font-size:20px;}
 }
 
 /* FILTER */
@@ -565,7 +584,7 @@ to{transform:scale(1);opacity:1;}
 <div class="topbar">
 <div>
 <div class="logo">
-<img src="{% static 'tracker/logo.png' %}?v=2" alt="Expense Tracker Logo" class="logo-img">
+<img src="{% static 'tracker/logo.png' %}" alt="Expense Tracker Logo" class="logo-img" onerror="this.onerror=null;this.src='{% static 'tracker/logo_clean.png' %}';">
 <span>Expense Tracker</span>
 </div>
 <div class="slogan">Track every rupee. Control your future.</div>
@@ -573,7 +592,7 @@ to{transform:scale(1);opacity:1;}
 <div class="user-area">
 {% if request.user.is_authenticated %}
 <div class="user-link" onclick="toggleDrawer(true)" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false">
-<img class="user-avatar" src="{{ request.user.profile.profile_image_url }}" alt="Profile photo">
+<img class="user-avatar" src="{{ request.user.profile.profile_image_url }}" alt="Profile photo" onerror="this.onerror=null;this.src='{% static 'tracker/logo.png' %}';">
 <span>{{ request.user.username }}</span>
 </div>
 {% else %}
@@ -594,7 +613,7 @@ to{transform:scale(1);opacity:1;}
 <div class="container reveal">
 
 <div class="profile-card reveal delay-1">
-<img src="{{ request.user.profile.profile_image_url }}" alt="Profile photo">
+<img src="{{ request.user.profile.profile_image_url }}" alt="Profile photo" onerror="this.onerror=null;this.src='{% static 'tracker/logo.png' %}';">
 <div class="profile-meta">
 <span class="name">{{ request.user.profile.full_name }}</span>
 <span class="email">{{ request.user.email }}</span>
@@ -707,7 +726,7 @@ options:{plugins:{legend:{position:'bottom'}}}
 <div id="drawerScrim" class="drawer-scrim" onclick="toggleDrawer(false)"></div>
 <aside id="profileDrawer" class="drawer" aria-hidden="true">
 <div class="drawer-header">
-<img src="{{ request.user.profile.profile_image_url }}" alt="Profile photo">
+<img src="{{ request.user.profile.profile_image_url }}" alt="Profile photo" onerror="this.onerror=null;this.src='{% static 'tracker/logo.png' %}';">
 <div class="drawer-title">
 <span class="name">{{ request.user.profile.full_name }}</span>
 <span class="email">{{ request.user.email }}</span>

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -158,14 +159,9 @@
 
         <div class="profile-header">
 
-            {% if request.user.profile and request.user.profile.profile_image_url %}
-                <img src="{{ request.user.profile.profile_image_url }}"
-                     alt="Profile Photo"
-                     onerror="this.src='/static/tracker/default-avatar.png';">
-            {% else %}
-                <img src="/static/tracker/default-avatar.png"
-                     alt="Default Profile Photo">
-            {% endif %}
+            <img src="{{ request.user.profile.profile_image_url }}"
+                 alt="Profile Photo"
+                 onerror="this.onerror=null;this.src='{% static 'tracker/logo.png' %}';">
 
             <h1>{{ request.user.profile.full_name }}</h1>
 
