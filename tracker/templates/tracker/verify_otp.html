@@ -2,20 +2,31 @@
 <html>
 <head>
 <title>Verify OTP</title>
+
+<!-- ✅ makes layout scale correctly on phones -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 *{box-sizing:border-box;}
+
 body{
 margin:0;
-height:100vh;
+min-height:100vh;              /* allow scroll when keyboard opens */
 display:flex;
 justify-content:center;
 align-items:center;
 font-family:"Segoe UI",sans-serif;
 background:linear-gradient(135deg,#22c55e,#16a34a);
-overflow:hidden;
+overflow-x:hidden;
+padding:16px;                  /* space on small screens */
 }
 
 /* FLOATING BACKGROUND */
+.bg-circle,
+.bg-circle2{
+pointer-events:none;           /* don’t block taps */
+}
+
 .bg-circle{
 position:absolute;
 width:300px;
@@ -26,6 +37,7 @@ top:-120px;
 right:-120px;
 animation:float 7s infinite ease-in-out;
 }
+
 .bg-circle2{
 position:absolute;
 width:350px;
@@ -43,7 +55,8 @@ backdrop-filter:blur(12px);
 padding:35px;
 border-radius:20px;
 box-shadow:0 25px 60px rgba(0,0,0,.3);
-width:360px;
+width:100%;               /* responsive */
+max-width:360px;          /* keep your original size on desktop */
 text-align:center;
 animation:slide .6s ease;
 }
@@ -53,18 +66,18 @@ p{color:#065f46;font-size:14px;}
 
 input{
 width:100%;
-padding:12px;
+padding:14px;                 /* better tap target */
 border-radius:10px;
 border:1px solid #ccc;
 margin-top:15px;
-font-size:18px;
-letter-spacing:4px;
+font-size:20px;
+letter-spacing:6px;
 text-align:center;
 }
 
 button{
 width:100%;
-padding:12px;
+padding:14px;
 margin-top:20px;
 border-radius:12px;
 border:none;
@@ -80,6 +93,15 @@ button:hover{transform:translateY(-2px);}
 color:red;
 margin-top:10px;
 font-size:14px;
+}
+
+/* small screen tuning */
+@media (max-width:420px){
+.card{
+padding:24px;
+border-radius:16px;
+}
+h2{font-size:20px;}
 }
 
 @keyframes slide{
@@ -109,7 +131,16 @@ to{transform:translateY(0);opacity:1;}
 
 <form method="post">
 {% csrf_token %}
-<input type="text" name="otp" placeholder="••••••" required>
+
+<!-- ✅ numeric keypad on mobile -->
+<input type="text"
+       name="otp"
+       placeholder="••••••"
+       inputmode="numeric"
+       pattern="[0-9]*"
+       maxlength="6"
+       required>
+
 <button>Verify & Login</button>
 </form>
 
