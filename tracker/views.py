@@ -155,17 +155,17 @@ def email_login(request):
 
         print("OTP:", otp, "EMAIL:", email)
         try:
-            send_mail(
-                     subject="Your OTP Code",
-                     message=f"Your OTP is {otp}",
-                     from_email=settings.DEFAULT_FROM_EMAIL,
-                     recipient_list=[email],
-                     fail_silently=False,
-                    )
-            print("OTP EMAIL SENT OK")
+              send_mail(
+                subject="Your OTP Code",
+                message=f"Your OTP is {otp}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=True,   # ← critical
+                )
+              print("OTP mail attempt done")
 
         except Exception as e:
-             print("OTP EMAIL FAILED:", str(e))
+             print("MAIL FAILED:", str(e))
              return render(
         request,
         "tracker/login_email.html",
