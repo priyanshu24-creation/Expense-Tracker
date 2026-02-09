@@ -59,6 +59,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# ======================
+# URLS / TEMPLATES
+# ======================
+
 ROOT_URLCONF = "expense_tracker.urls"
 
 TEMPLATES = [
@@ -145,10 +149,10 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # ======================
-# EMAIL — SAFE MODE (no SMTP timeout)
+# EMAIL — SENDGRID SMTP (REAL OTP DELIVERY)
 # ======================
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.sendgrid.net"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
