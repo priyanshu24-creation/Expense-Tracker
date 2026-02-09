@@ -12,16 +12,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ======================
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-# ======================
-# HOSTS
-# ======================
-
-ALLOWED_HOSTS = [".onrender.com", "localhost", "127.0.0.1"]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ======================
-# APPS
+# HOSTS / CSRF
+# ======================
+
+ALLOWED_HOSTS = [
+    ".onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.onrender.com"
+]
+
+# ======================
+# APPLICATIONS
 # ======================
 
 INSTALLED_APPS = [
@@ -95,39 +106,56 @@ else:
     }
 
 # ======================
-# I18N
+# PASSWORD VALIDATION
+# ======================
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+# ======================
+# INTERNATIONALIZATION
 # ======================
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
+
 USE_I18N = True
 USE_TZ = True
+
+# ======================
+# AUTH REDIRECTS
+# ======================
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 # ======================
-# STATIC
+# STATIC FILES
 # ======================
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STATICFILES_DIRS = []
-if (BASE_DIR / "tracker" / "static").exists():
-    STATICFILES_DIRS.append(BASE_DIR / "tracker" / "static")
+tracker_static = BASE_DIR / "tracker" / "static"
+if tracker_static.exists():
+    STATICFILES_DIRS.append(tracker_static)
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 # ======================
-# MEDIA
+# MEDIA FILES
 # ======================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # ======================
-# EMAIL (simple SMTP)
+# EMAIL (SMTP)
 # ======================
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -139,7 +167,7 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@example.com")
 
 # ======================
-# DEFAULT PK
+# DEFAULT PRIMARY KEY
 # ======================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
