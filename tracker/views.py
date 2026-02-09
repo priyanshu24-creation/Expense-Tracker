@@ -144,15 +144,16 @@ def edit_profile(request):
 # =========================
 
 def send_otp_email(to_email, otp):
-    message = Mail(
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to_email=to_email,   # ← singular (FIX)
-        subject="Your OTP Code",
-        html_content=f"<strong>Your OTP is {otp}</strong>",
-    )
+    from_email = Email(settings.DEFAULT_FROM_EMAIL)
+    to_email_obj = To(to_email)
+    subject = "Your OTP Code"
+    content = Content("text/plain", f"Your OTP is {otp}")
+
+    message = Mail(from_email, to_email_obj, subject, content)
 
     sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
     sg.send(message)
+
 
 
 def email_login(request):
