@@ -154,14 +154,23 @@ def email_login(request):
         EmailOTP.objects.create(user=user, otp=otp)
 
         print("OTP:", otp, "EMAIL:", email)
+        try:
+            send_mail(
+                     subject="Your OTP Code",
+                     message=f"Your OTP is {otp}",
+                     from_email=settings.DEFAULT_FROM_EMAIL,
+                     recipient_list=[email],
+                     fail_silently=False,
+                    )
+            print("OTP EMAIL SENT OK")
 
-        send_mail(
-            subject="Your OTP Code",
-            message=f"Your OTP is {otp}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        except Exception as e:
+             print("OTP EMAIL FAILED:", str(e))
+             return render(
+        request,
+        "tracker/login_email.html",
+        {"error": "Email service failed. Contact admin."}
+    )
 
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
