@@ -12,7 +12,7 @@ import random
 
 from .models import Transaction, Profile, EmailOTP
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from sendgrid.helpers.mail import Mail, Email, To, Content
 
 
 
@@ -153,7 +153,6 @@ def send_otp_email(to_email, otp):
 
     sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
     sg.send(message)
-
 
 
 def email_login(request):
