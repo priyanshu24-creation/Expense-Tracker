@@ -49,89 +49,21 @@ def index(request):
 
     transactions = Transaction.objects.filter(user=request.user)
 
-    if selected_month:
-        year, month = selected_month.split('-')
-        transactions = transactions.filter(date__year=year, date__month=month)
-
     total_income = sum(t.amount for t in transactions if t.type == "income")
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
     balance = total_income - total_expense
-
-    online_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "online")
-    online_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "online")
-    cash_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "cash")
-    cash_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "cash")
-
-    online_balance = online_income - online_expense
-    cash_balance = cash_income - cash_expense
-
-    # LOW BALANCE EMAIL
-    sent_flag = request.session.get("low_balance_email_sent", False)
-
-    if balance <= 100 and not sent_flag and request.user.email:
-        send_mail(
-            "Low Balance Alert",
-            f"Your balance is ₹{balance}",
-            settings.DEFAULT_FROM_EMAIL,
-            [request.user.email],
-            fail_silently=False,
-        )
-        request.session["low_balance_email_sent"] = True
-
-    if balance > 100:
-        request.session["low_balance_email_sent"] = False
-
-    category_data = {}
-    for t in transactions:
-        if t.type == "expense":
-            label = t.get_category_display()
-            category_data[label] = category_data.get(label, 0) + t.amount
 
     return render(request, "index.html", {
         "transactions": transactions,
         "total_income": total_income,
         "total_expense": total_expense,
         "balance": balance,
-        "online_balance": online_balance,
-        "cash_balance": cash_balance,
+        "online_balance": 0,
+        "cash_balance": 0,
         "selected_month": selected_month,
-        "chart_labels": json.dumps(list(category_data.keys())),
-        "chart_values": json.dumps(list(category_data.values())),
+        "chart_labels": json.dumps([]),
+        "chart_values": json.dumps([]),
     })
-
-
-# =========================
-# DELETE
-# =========================
-
-@login_required
-def delete_transaction(request, id):
-    get_object_or_404(Transaction, id=id, user=request.user).delete()
-    return redirect("/")
-
-
-# =========================
-# PROFILE
-# =========================
-
-@login_required
-def profile(request):
-    profile, _ = Profile.objects.get_or_create(user=request.user)
-    return render(request, "profile.html", {"profile": profile})
-
-
-@login_required
-def edit_profile(request):
-    profile = request.user.profile
-
-    if request.method == "POST":
-        profile.full_name = request.POST.get("full_name")
-        if request.FILES.get("image"):
-            profile.image = request.FILES["image"]
-        profile.save()
-        return redirect("home")
-
-    return render(request, "edit_profile.html", {"profile": profile})
 
 
 # =========================
@@ -167,12 +99,13 @@ def email_login(request):
         otp = str(random.randint(100000, 999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
-        # ✅ SIMPLE + CORRECT MAIL SEND
+        print("SENDING OTP:", otp, "TO:", email)
+
         send_mail(
-            "Your OTP Code",
-            f"Your OTP is {otp}",
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
+            subject="Your OTP Code",
+            message=f"Your OTP is {otp}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
             fail_silently=False,
         )
 
@@ -199,11 +132,13 @@ def verify_otp(request):
         otp_obj = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
 
         if not otp_obj:
-            return render(request, "tracker/verify_otp.html", {"error": "OTP expired"})
+            return render(request, "tracker/verify_otp.html",
+                          {"error": "OTP expired"})
 
         if timezone.now() > otp_obj.created_at + timedelta(minutes=10):
             otp_obj.delete()
-            return render(request, "tracker/verify_otp.html", {"error": "OTP expired"})
+            return render(request, "tracker/verify_otp.html",
+                          {"error": "OTP expired"})
 
         if otp_obj.otp == code:
             otp_obj.delete()
@@ -211,6 +146,7 @@ def verify_otp(request):
             login(request, user)
             return redirect("home")
 
-        return render(request, "tracker/verify_otp.html", {"error": "Invalid code"})
+        return render(request, "tracker/verify_otp.html",
+                      {"error": "Invalid code"})
 
     return render(request, "tracker/verify_otp.html")
