@@ -9,7 +9,6 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 import random
-import traceback
 
 from .models import Transaction, Profile, EmailOTP
 
@@ -58,43 +57,32 @@ def index(request):
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
     balance = total_income - total_expense
 
-    online_income = sum(
-        t.amount for t in transactions
-        if t.type == "income" and t.payment_mode == "online"
-    )
-    online_expense = sum(
-        t.amount for t in transactions
-        if t.type == "expense" and t.payment_mode == "online"
-    )
-    cash_income = sum(
-        t.amount for t in transactions
-        if t.type == "income" and t.payment_mode == "cash"
-    )
-    cash_expense = sum(
-        t.amount for t in transactions
-        if t.type == "expense" and t.payment_mode == "cash"
-    )
+    online_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "online")
+    online_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "online")
+    cash_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "cash")
+    cash_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "cash")
+
     online_balance = online_income - online_expense
     cash_balance = cash_income - cash_expense
 
-    # LOW BALANCE EMAIL
+    # ===== LOW BALANCE EMAIL =====
     sent_flag = request.session.get("low_balance_email_sent", False)
 
     if balance <= 100 and not sent_flag and request.user.email:
-        try:
-            send_mail(
-                "Low Balance Alert",
-                f"Your balance is ₹{balance}",
-                settings.DEFAULT_FROM_EMAIL,
-                [request.user.email],
-            )
-            request.session["low_balance_email_sent"] = True
-        except Exception:
-            traceback.print_exc()
+        print("LOW BALANCE MAIL → sending")
+        send_mail(
+            "Low Balance Alert",
+            f"Your balance is ₹{balance}",
+            settings.DEFAULT_FROM_EMAIL,
+            [request.user.email],
+            fail_silently=False,
+        )
+        request.session["low_balance_email_sent"] = True
 
     if balance > 100:
         request.session["low_balance_email_sent"] = False
 
+    # chart data
     category_data = {}
     for t in transactions:
         if t.type == "expense":
@@ -176,29 +164,27 @@ def email_login(request):
                 defaults={"full_name": full_name}
             )
 
-        # delete old OTPs
+        # remove old OTPs
         EmailOTP.objects.filter(user=user).delete()
 
         otp = str(random.randint(100000, 999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
-        try:
-            send_mail(
-                "Your OTP Code",
-                f"Your OTP is {otp}",
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-            )
-        except Exception as exc:
-            traceback.print_exc()
-            error_msg = "Email send failed"
-            if settings.DEBUG:
-                error_msg = f"Email send failed: {exc}"
-            return render(
-                request,
-                "tracker/login_email.html",
-                {"error": error_msg},
-            )
+        # ===== OTP MAIL SEND =====
+        print("=== OTP MAIL DEBUG ===")
+        print("BACKEND:", settings.EMAIL_BACKEND)
+        print("FROM:", settings.DEFAULT_FROM_EMAIL)
+        print("TO:", email)
+
+        send_mail(
+            "Your OTP Code",
+            f"Your OTP is {otp}",
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+
+        print("=== OTP MAIL SEND CALLED ===")
 
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
