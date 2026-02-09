@@ -11,6 +11,9 @@ import json
 import random
 
 from .models import Transaction, Profile, EmailOTP
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 
 
 # =========================
@@ -140,6 +143,18 @@ def edit_profile(request):
 # EMAIL LOGIN + OTP
 # =========================
 
+def send_otp_email(to_email, otp):
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=to_email,
+        subject="Your OTP Code",
+        html_content=f"<strong>Your OTP is {otp}</strong>",
+    )
+
+    sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+    sg.send(message)
+
+
 def email_login(request):
     if request.method == "POST":
         full_name = request.POST.get("full_name")
@@ -176,13 +191,8 @@ def email_login(request):
         print("FROM:", settings.DEFAULT_FROM_EMAIL)
         print("TO:", email)
 
-        send_mail(
-            "Your OTP Code",
-            f"Your OTP is {otp}",
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
+        send_otp_email(email, otp)
+
 
         print("=== OTP MAIL SEND CALLED ===")
 
