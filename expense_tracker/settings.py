@@ -12,7 +12,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ======================
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
-
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -32,7 +31,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # ======================
-# APPLICATIONS
+# APPS
 # ======================
 
 INSTALLED_APPS = [
@@ -59,10 +58,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-# ======================
-# URLS / TEMPLATES
-# ======================
 
 ROOT_URLCONF = "expense_tracker.urls"
 
@@ -117,24 +112,19 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ======================
-# INTERNATIONALIZATION
+# I18N
 # ======================
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-
 USE_I18N = True
 USE_TZ = True
-
-# ======================
-# AUTH REDIRECTS
-# ======================
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 # ======================
-# STATIC FILES
+# STATIC
 # ======================
 
 STATIC_URL = "/static/"
@@ -148,26 +138,22 @@ if tracker_static.exists():
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 # ======================
-# MEDIA FILES
+# MEDIA
 # ======================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # ======================
-# EMAIL (SMTP)
+# EMAIL — SAFE MODE (no SMTP timeout)
 # ======================
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@example.com")
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+DEFAULT_FROM_EMAIL = "no-reply@example.com"
 
 # ======================
-# DEFAULT PRIMARY KEY
+# DEFAULT PK
 # ======================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
