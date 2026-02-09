@@ -13,13 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 
-DEBUG = os.getenv("DEBUG", "False") == "True"
-
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-# ======================
-# HOSTS / CSRF
-# ======================
+DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = [
     ".onrender.com",
@@ -30,6 +24,8 @@ ALLOWED_HOSTS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com"
 ]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ======================
 # APPS
@@ -117,7 +113,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ======================
-# I18N
+# INTERNATIONALIZATION
 # ======================
 
 LANGUAGE_CODE = "en-us"
@@ -125,8 +121,12 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+# ======================
+# LOGIN REDIRECTS
+# ======================
+
 LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login/"
 
 # ======================
 # STATIC FILES
@@ -150,13 +150,14 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # ======================
-# EMAIL — SAFE MODE (NO SERVER CRASH)
+# SENDGRID EMAIL CONFIG
 # ======================
-# This prevents Render worker timeout.
-# OTP will print in logs instead of real email.
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "trackexpenseteam@gmail.com"
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "trackexpenseteam@gmail.com"
+)
 
 # ======================
 # DEFAULT PK

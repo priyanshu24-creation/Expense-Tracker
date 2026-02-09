@@ -2,15 +2,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.contrib.auth.models import User
-from django.core.mail import send_mail
-from django.conf import settings
 from django.utils import timezone
+from django.conf import settings
 
 from datetime import timedelta
 import json
 import random
 
 from .models import Transaction, Profile, EmailOTP
+
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Email, To, Content
 
 
 # =========================
@@ -27,12 +29,12 @@ def index(request):
         Transaction.objects.create(
             user=request.user,
             type=request.POST.get("type"),
-            amount=request.POST.get("amount"),
+            amount=float(request.POST.get("amount")),
             category=request.POST.get("category"),
             payment_mode=request.POST.get("payment_mode", "online"),
             date=request.POST.get("date"),
         )
-        return redirect("/")
+        return redirect("home")
 
     if not request.user.is_authenticated:
         return render(request, "index.html", {
@@ -51,21 +53,25 @@ def index(request):
 
     if selected_month:
         year, month = selected_month.split("-")
-        transactions = transactions.filter(date__year=year, date__month=month)
+        transactions = transactions.filter(
+            date__year=int(year),
+            date__month=int(month)
+        )
 
     total_income = sum(t.amount for t in transactions if t.type == "income")
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
     balance = total_income - total_expense
 
-    online_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "online")
-    online_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "online")
-    cash_income = sum(t.amount for t in transactions if t.type == "income" and t.payment_mode == "cash")
-    cash_expense = sum(t.amount for t in transactions if t.type == "expense" and t.payment_mode == "cash")
+    online_balance = sum(
+        t.amount if t.type == "income" else -t.amount
+        for t in transactions if t.payment_mode == "online"
+    )
 
-    online_balance = online_income - online_expense
-    cash_balance = cash_income - cash_expense
+    cash_balance = sum(
+        t.amount if t.type == "income" else -t.amount
+        for t in transactions if t.payment_mode == "cash"
+    )
 
-    # chart data
     category_data = {}
     for t in transactions:
         if t.type == "expense":
@@ -86,13 +92,13 @@ def index(request):
 
 
 # =========================
-# DELETE TRANSACTION
+# DELETE
 # =========================
 
 @login_required
 def delete_transaction(request, id):
     get_object_or_404(Transaction, id=id, user=request.user).delete()
-    return redirect("/")
+    return redirect("home")
 
 
 # =========================
@@ -101,26 +107,26 @@ def delete_transaction(request, id):
 
 @login_required
 def profile(request):
-    profile, _ = Profile.objects.get_or_create(user=request.user)
-    return render(request, "profile.html", {"profile": profile})
+    profile_obj, _ = Profile.objects.get_or_create(user=request.user)
+    return render(request, "profile.html", {"profile": profile_obj})
 
 
 @login_required
 def edit_profile(request):
-    profile = request.user.profile
+    profile_obj, _ = Profile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
-        profile.full_name = request.POST.get("full_name")
+        profile_obj.full_name = request.POST.get("full_name")
         if request.FILES.get("image"):
-            profile.image = request.FILES["image"]
-        profile.save()
-        return redirect("home")
+            profile_obj.image = request.FILES["image"]
+        profile_obj.save()
+        return redirect("profile")
 
-    return render(request, "edit_profile.html", {"profile": profile})
+    return render(request, "edit_profile.html", {"profile": profile_obj})
 
 
 # =========================
-# EMAIL LOGIN + OTP
+# EMAIL LOGIN + OTP SEND
 # =========================
 
 def email_login(request):
@@ -131,8 +137,9 @@ def email_login(request):
         confirm_password = request.POST.get("confirm_password")
 
         if password != confirm_password:
-            return render(request, "tracker/login_email.html",
-                          {"error": "Passwords do not match"})
+            return render(request, "tracker/login_email.html", {
+                "error": "Passwords do not match"
+            })
 
         user = User.objects.filter(email=email).first()
 
@@ -147,30 +154,28 @@ def email_login(request):
                 defaults={"full_name": full_name}
             )
 
-        # remove old OTPs
+        # clear old OTPs
         EmailOTP.objects.filter(user=user).delete()
 
         otp = str(random.randint(100000, 999999))
-        EmailOTP.objects.create(user=user, otp=otp)
+        EmailOTP.objects.create(
+            user=user,
+            otp=otp,
+            created_at=timezone.now()
+        )
 
-        print("OTP:", otp, "EMAIL:", email)
-        try:
-              send_mail(
-                subject="Your OTP Code",
-                message=f"Your OTP is {otp}",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=True,   # ← critical
-                )
-              print("OTP mail attempt done")
+        # ===== SENDGRID SEND =====
+        from_email = Email(settings.DEFAULT_FROM_EMAIL)
+        to_email = To(email)
+        subject = "Your OTP Code"
+        content = Content("text/plain", f"Your OTP is {otp}")
 
-        except Exception as e:
-             print("MAIL FAILED:", str(e))
-             return render(
-        request,
-        "tracker/login_email.html",
-        {"error": "Email service failed. Contact admin."}
-    )
+        mail = Mail(from_email, to_email, subject, content)
+
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        resp = sg.client.mail.send.post(request_body=mail.get())
+
+        print("SENDGRID STATUS:", resp.status_code)
 
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
@@ -179,37 +184,42 @@ def email_login(request):
 
 
 # =========================
-# VERIFY OTP
+# OTP VERIFY
 # =========================
 
 def verify_otp(request):
     user_id = request.session.get("otp_user_id")
+
     if not user_id:
         return redirect("email_login")
 
-    user = User.objects.get(id=user_id)
+    user = User.objects.filter(id=user_id).first()
+    if not user:
+        return redirect("email_login")
 
     if request.method == "POST":
-        code = request.POST.get("otp")
-
-        otp_obj = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
+        entered_otp = request.POST.get("otp")
+        otp_obj = EmailOTP.objects.filter(user=user).first()
 
         if not otp_obj:
-            return render(request, "tracker/verify_otp.html",
-                          {"error": "OTP expired"})
+            return render(request, "tracker/verify_otp.html", {
+                "error": "OTP expired"
+            })
 
         if timezone.now() > otp_obj.created_at + timedelta(minutes=10):
             otp_obj.delete()
-            return render(request, "tracker/verify_otp.html",
-                          {"error": "OTP expired"})
+            return render(request, "tracker/verify_otp.html", {
+                "error": "OTP expired"
+            })
 
-        if otp_obj.otp == code:
+        if entered_otp == otp_obj.otp:
+            login(request, user)
             otp_obj.delete()
             request.session.pop("otp_user_id", None)
-            login(request, user)
             return redirect("home")
 
-        return render(request, "tracker/verify_otp.html",
-                      {"error": "Invalid code"})
+        return render(request, "tracker/verify_otp.html", {
+            "error": "Invalid OTP"
+        })
 
     return render(request, "tracker/verify_otp.html")
