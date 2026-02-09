@@ -11,9 +11,6 @@ import json
 import random
 
 from .models import Transaction, Profile, EmailOTP
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content
-
 
 
 # =========================
@@ -68,11 +65,10 @@ def index(request):
     online_balance = online_income - online_expense
     cash_balance = cash_income - cash_expense
 
-    # ===== LOW BALANCE EMAIL =====
+    # LOW BALANCE EMAIL
     sent_flag = request.session.get("low_balance_email_sent", False)
 
     if balance <= 100 and not sent_flag and request.user.email:
-        print("LOW BALANCE MAIL → sending")
         send_mail(
             "Low Balance Alert",
             f"Your balance is ₹{balance}",
@@ -85,7 +81,6 @@ def index(request):
     if balance > 100:
         request.session["low_balance_email_sent"] = False
 
-    # chart data
     category_data = {}
     for t in transactions:
         if t.type == "expense":
@@ -143,18 +138,6 @@ def edit_profile(request):
 # EMAIL LOGIN + OTP
 # =========================
 
-def send_otp_email(to_email, otp):
-    from_email = Email(settings.DEFAULT_FROM_EMAIL)
-    to_email_obj = To(to_email)
-    subject = "Your OTP Code"
-    content = Content("text/plain", f"Your OTP is {otp}")
-
-    message = Mail(from_email, to_email_obj, subject, content)
-
-    sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-    sg.send(message)
-
-
 def email_login(request):
     if request.method == "POST":
         full_name = request.POST.get("full_name")
@@ -179,22 +162,19 @@ def email_login(request):
                 defaults={"full_name": full_name}
             )
 
-        # remove old OTPs
         EmailOTP.objects.filter(user=user).delete()
 
         otp = str(random.randint(100000, 999999))
         EmailOTP.objects.create(user=user, otp=otp)
 
-        # ===== OTP MAIL SEND =====
-        print("=== OTP MAIL DEBUG ===")
-        print("BACKEND:", settings.EMAIL_BACKEND)
-        print("FROM:", settings.DEFAULT_FROM_EMAIL)
-        print("TO:", email)
-
-        send_otp_email(email, otp)
-
-
-        print("=== OTP MAIL SEND CALLED ===")
+        # ✅ SIMPLE + CORRECT MAIL SEND
+        send_mail(
+            "Your OTP Code",
+            f"Your OTP is {otp}",
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
 
         request.session["otp_user_id"] = user.id
         return redirect("verify_otp")
@@ -219,13 +199,11 @@ def verify_otp(request):
         otp_obj = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
 
         if not otp_obj:
-            return render(request, "tracker/verify_otp.html",
-                          {"error": "OTP expired"})
+            return render(request, "tracker/verify_otp.html", {"error": "OTP expired"})
 
         if timezone.now() > otp_obj.created_at + timedelta(minutes=10):
             otp_obj.delete()
-            return render(request, "tracker/verify_otp.html",
-                          {"error": "OTP expired"})
+            return render(request, "tracker/verify_otp.html", {"error": "OTP expired"})
 
         if otp_obj.otp == code:
             otp_obj.delete()
@@ -233,7 +211,6 @@ def verify_otp(request):
             login(request, user)
             return redirect("home")
 
-        return render(request, "tracker/verify_otp.html",
-                      {"error": "Invalid code"})
+        return render(request, "tracker/verify_otp.html", {"error": "Invalid code"})
 
     return render(request, "tracker/verify_otp.html")
