@@ -146,7 +146,7 @@ def edit_profile(request):
 def send_otp_email(to_email, otp):
     message = Mail(
         from_email=settings.DEFAULT_FROM_EMAIL,
-        to_emails=to_email,
+        to_email=to_email,   # ← singular (FIX)
         subject="Your OTP Code",
         html_content=f"<strong>Your OTP is {otp}</strong>",
     )
