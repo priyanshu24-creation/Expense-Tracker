@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Login</title>
+<title>Create Account</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -17,7 +17,6 @@ font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
 background:linear-gradient(160deg,#4f46e5,#2563eb);
 }
 
-/* soft ambient shapes */
 .bg1,.bg2{
 position:absolute;
 border-radius:50%;
@@ -35,12 +34,11 @@ background:white;
 bottom:-120px;right:-80px;
 }
 
-/* premium card */
 .card{
 position:relative;
 z-index:2;
 width:92%;
-max-width:420px;
+max-width:460px;
 padding:28px 24px 26px;
 border-radius:22px;
 background:#ffffffee;
@@ -49,7 +47,6 @@ box-shadow:
 0 2px 6px rgba(0,0,0,.06);
 }
 
-/* brand dot */
 .brand-dot{
 width:42px;
 height:42px;
@@ -58,7 +55,6 @@ background:linear-gradient(135deg,#6366f1,#3b82f6);
 margin:0 auto 14px;
 }
 
-/* text hierarchy */
 h2{
 margin:0 0 6px;
 font-size:22px;
@@ -74,13 +70,18 @@ color:#475569;
 text-align:center;
 }
 
-/* inputs — fintech style */
+.grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+}
+
 input{
 width:100%;
-padding:15px;
+padding:14px;
 border-radius:14px;
 border:1px solid #e5e7eb;
-font-size:16px;
+font-size:15px;
 background:#f8fafc;
 transition:.2s;
 }
@@ -92,7 +93,10 @@ background:white;
 box-shadow:0 0 0 3px rgba(79,70,229,.12);
 }
 
-/* primary button */
+.full{
+grid-column:1 / -1;
+}
+
 button{
 width:100%;
 margin-top:18px;
@@ -112,7 +116,6 @@ transform:scale(.98);
 box-shadow:0 3px 10px rgba(37,99,235,.35);
 }
 
-/* error */
 .error{
 margin-top:12px;
 text-align:center;
@@ -121,7 +124,6 @@ font-size:14px;
 font-weight:500;
 }
 
-/* footer trust text */
 .secure{
 margin-top:16px;
 text-align:center;
@@ -129,12 +131,10 @@ font-size:12px;
 color:#64748b;
 }
 
-/* desktop refinement */
-@media (min-width:768px){
-.card{
-padding:34px 34px 30px;
+@media (max-width:520px){
+.grid{
+grid-template-columns:1fr;
 }
-h2{font-size:24px;}
 }
 </style>
 </head>
@@ -145,16 +145,20 @@ h2{font-size:24px;}
 <div class="bg2"></div>
 
 <div class="card">
+<div class="brand-dot"></div>
+<h2>Create Account</h2>
+<p>Verify your Gmail with OTP to activate your account</p>
 
-
-
-<h2>Login with Gmail</h2>
-<p>Verification code will be sent securely</p>
-
-<form method="post">
+<form method="post" action="{% url 'email_signup' %}">
 {% csrf_token %}
-<input type="email" name="email" placeholder="Enter your Gmail" required>
-<button>Send Verification Code</button>
+<div class="grid">
+<input class="full" type="text" name="full_name" placeholder="Full Name" value="{{ full_name|default:'' }}" required>
+<input type="text" name="username" placeholder="Username" value="{{ username|default:'' }}" required>
+<input class="full" type="email" name="email" placeholder="Gmail" value="{{ email|default:'' }}" required>
+<input type="password" name="password" placeholder="Password" required>
+<input type="password" name="confirm_password" placeholder="Confirm password" required>
+</div>
+<button>Create Account &amp; Send OTP</button>
 </form>
 
 {% if error %}
@@ -162,21 +166,12 @@ h2{font-size:24px;}
 {% endif %}
 
 <div class="secure">
-Secure OTP authentication
-</div>
-
-<div class="secure" style="margin-top:8px;">
-<a href="{% url 'forgot_password' %}" style="color:#e2e8f0;text-decoration:none;font-weight:600;">Forgot password? Use OTP</a>
-</div>
-
-<div class="secure" style="margin-top:8px;">
-<a href="{% url 'email_signup' %}" style="color:#e2e8f0;text-decoration:none;font-weight:600;">Create a new account</a>
+Already have an account? <a href="{% url 'email_login' %}" style="color:#e2e8f0;text-decoration:none;font-weight:600;">Login</a>
 </div>
 
 <div class="secure" style="margin-top:8px;">
 <a href="{% url 'get_started' %}" style="color:#e2e8f0;text-decoration:none;font-weight:600;">Back to Get Started</a>
 </div>
-
 </div>
 
 </body>

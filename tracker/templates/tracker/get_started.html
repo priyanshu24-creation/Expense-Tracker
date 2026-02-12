@@ -1,0 +1,321 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<title>Get Started</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="{% static 'tracker/logo.png' %}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+--primary:#4f46e5;
+--secondary:#3b82f6;
+--text:#0f172a;
+--muted:#64748b;
+}
+*{box-sizing:border-box;}
+body{
+margin:0;
+font-family:Poppins,sans-serif;
+background:linear-gradient(135deg,#eef2ff,#f8fafc);
+color:var(--text);
+}
+.topbar{
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:white;
+padding:14px 22px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+box-shadow:0 8px 25px rgba(0,0,0,.2);
+}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;}
+.logo img{width:34px;height:34px;border-radius:50%;background:white;padding:2px;}
+.logo small{display:block;font-weight:500;font-size:12px;opacity:.9;}
+.back-link{
+color:white;
+text-decoration:none;
+font-weight:600;
+}
+
+.page{
+max-width:1100px;
+margin:28px auto;
+padding:0 20px 40px;
+}
+
+.layout{
+display:grid;
+grid-template-columns:1.1fr .9fr;
+gap:22px;
+align-items:start;
+}
+
+.overview{
+background:white;
+border-radius:20px;
+padding:22px;
+box-shadow:0 12px 30px rgba(0,0,0,.12);
+}
+.preview-pill{
+display:inline-flex;
+align-items:center;
+gap:6px;
+background:#eef2ff;
+color:#3730a3;
+font-weight:600;
+font-size:12px;
+padding:6px 10px;
+border-radius:999px;
+margin-bottom:10px;
+}
+.overview h1{
+margin:0 0 10px;
+font-size:30px;
+}
+.overview p{
+margin:0 0 16px;
+color:var(--muted);
+font-size:14px;
+}
+.overview-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+}
+.mini-card{
+background:#f8fafc;
+border:1px solid #e2e8f0;
+border-radius:14px;
+padding:12px;
+}
+.mini-card b{display:block;font-size:13px;margin-bottom:4px;}
+.mini-card span{font-size:12px;color:var(--muted);}
+.overview-list{
+margin-top:16px;
+display:grid;
+gap:10px;
+}
+.overview-row{
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:10px 12px;
+border-radius:12px;
+background:#f8fafc;
+border:1px solid #e2e8f0;
+font-size:12px;
+}
+.badge{
+padding:4px 8px;
+border-radius:999px;
+font-size:11px;
+font-weight:600;
+}
+.badge-income{background:#ecfdf3;color:#0f766e;}
+.badge-expense{background:#fef2f2;color:#b91c1c;}
+
+.auth-card{
+background:white;
+border-radius:20px;
+padding:22px;
+box-shadow:0 12px 30px rgba(0,0,0,.12);
+}
+.auth-card h2{
+margin:0 0 6px;
+font-size:22px;
+}
+.auth-card p{
+margin:0 0 16px;
+color:var(--muted);
+font-size:13px;
+}
+.auth-tabs{
+display:flex;
+gap:10px;
+margin-bottom:16px;
+}
+.auth-tab{
+flex:1;
+padding:10px 12px;
+border-radius:12px;
+border:1px solid #e2e8f0;
+background:#f8fafc;
+font-weight:600;
+cursor:pointer;
+}
+.auth-tab.active{
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:white;
+border-color:transparent;
+}
+.auth-form{
+display:none;
+}
+.auth-form.active{
+display:block;
+}
+.auth-form input{
+width:100%;
+padding:12px;
+border-radius:12px;
+border:1px solid #e2e8f0;
+margin-bottom:10px;
+}
+.auth-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+}
+.auth-grid .full{grid-column:1 / -1;}
+.auth-submit{
+width:100%;
+padding:12px 16px;
+border-radius:12px;
+border:none;
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:white;
+font-weight:600;
+cursor:pointer;
+}
+.auth-error{
+margin-top:10px;
+color:#dc2626;
+font-size:13px;
+font-weight:600;
+}
+.auth-note{
+margin-top:8px;
+font-size:12px;
+color:var(--muted);
+}
+
+@media (max-width: 900px){
+.layout{grid-template-columns:1fr;}
+}
+@media (max-width: 600px){
+.topbar{padding:12px 14px;}
+.overview h1{font-size:24px;}
+.overview-grid{grid-template-columns:1fr;}
+.auth-tabs{flex-direction:column;}
+.auth-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+<div class="logo">
+<img src="{% static 'tracker/logo.png' %}" alt="Logo">
+<div>
+Expense Tracker
+<small>Track every rupee, stay in control</small>
+</div>
+</div>
+<a class="back-link" href="{% url 'home' %}">Back to Home</a>
+</div>
+
+<div class="page">
+<div class="layout">
+<div class="overview">
+<div class="preview-pill">App Overview</div>
+<h1>Know where your money goes</h1>
+<p>Track income and expenses, view monthly summaries, and keep your finances under control.</p>
+<div class="overview-grid">
+<div class="mini-card">
+<b>Instant balance</b>
+<span>Income and expense totals in one view.</span>
+</div>
+<div class="mini-card">
+<b>Monthly filter</b>
+<span>Review a specific month quickly.</span>
+</div>
+<div class="mini-card">
+<b>Category insights</b>
+<span>Understand spending patterns with charts.</span>
+</div>
+<div class="mini-card">
+<b>Fast entry</b>
+<span>Add transactions in seconds.</span>
+</div>
+</div>
+<div class="overview-list">
+<div class="overview-row">
+<span>Salary • Feb 12</span>
+<span class="badge badge-income">+&#8377;18,450</span>
+</div>
+<div class="overview-row">
+<span>Food • Feb 10</span>
+<span class="badge badge-expense">-&#8377;1,250</span>
+</div>
+<div class="overview-row">
+<span>Transport • Feb 08</span>
+<span class="badge badge-expense">-&#8377;680</span>
+</div>
+</div>
+</div>
+
+<div class="auth-card" id="auth-section" data-auth-mode="{{ auth_mode|default:'login' }}">
+<h2>Get Started</h2>
+<p>Login with OTP or create a new account to use the app.</p>
+
+<div class="auth-tabs">
+<button type="button" class="auth-tab" data-tab="login">Login</button>
+<button type="button" class="auth-tab" data-tab="signup">Create Account</button>
+</div>
+
+<form class="auth-form" data-form="login" method="post" action="{% url 'email_login' %}">
+{% csrf_token %}
+<input type="hidden" name="source" value="get_started">
+<input type="email" name="email" placeholder="Enter your Gmail" required>
+<button class="auth-submit" type="submit">Send OTP</button>
+{% if login_error %}
+<div class="auth-error">{{ login_error }}</div>
+{% endif %}
+<div class="auth-note">A 6-digit OTP will be sent to your Gmail.</div>
+</form>
+
+<form class="auth-form" data-form="signup" method="post" action="{% url 'email_signup' %}">
+{% csrf_token %}
+<input type="hidden" name="source" value="get_started">
+<div class="auth-grid">
+<input class="full" type="text" name="full_name" placeholder="Full Name" value="{{ full_name|default:'' }}" required>
+<input type="text" name="username" placeholder="Username" value="{{ username|default:'' }}" required>
+<input class="full" type="email" name="email" placeholder="Gmail" value="{{ email|default:'' }}" required>
+<input type="password" name="password" placeholder="Password" required>
+<input type="password" name="confirm_password" placeholder="Confirm password" required>
+</div>
+<button class="auth-submit" type="submit">Create Account &amp; Send OTP</button>
+{% if signup_error %}
+<div class="auth-error">{{ signup_error }}</div>
+{% endif %}
+<div class="auth-note">Verify your Gmail with OTP to activate your account.</div>
+</form>
+</div>
+</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const section=document.getElementById("auth-section");
+  if(!section){return;}
+  const tabs=section.querySelectorAll(".auth-tab");
+  const forms=section.querySelectorAll(".auth-form");
+  const mode=section.dataset.authMode || "login";
+
+  const setActive=(value)=>{
+    tabs.forEach(tab=>tab.classList.toggle("active", tab.dataset.tab===value));
+    forms.forEach(form=>form.classList.toggle("active", form.dataset.form===value));
+  };
+
+  tabs.forEach(tab=>{
+    tab.addEventListener("click",()=>setActive(tab.dataset.tab));
+  });
+
+  setActive(mode);
+});
+</script>
+
+</body>
+</html>

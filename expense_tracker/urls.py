@@ -1,10 +1,13 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve as static_serve
 from django.contrib.auth.views import LogoutView
+import os
+import sys
+import re
 
-from tracker.views import email_login, verify_otp
+from tracker.views import email_login, email_signup, verify_otp
 
 
 urlpatterns = [
@@ -12,6 +15,7 @@ urlpatterns = [
 
     # auth (OTP login flow)
     path('login/', email_login, name='email_login'),
+    path('signup/', email_signup, name='email_signup'),
     path('verify/', verify_otp, name='verify_otp'),
     path('logout/', LogoutView.as_view(next_page='email_login'), name='logout'),
 
@@ -20,5 +24,9 @@ urlpatterns = [
 ]
 
 # media (profile images etc.)
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+serve_media = settings.DEBUG or os.getenv("SERVE_MEDIA", "False") == "True" or "runserver" in sys.argv
+if serve_media:
+    media_prefix = re.escape(settings.MEDIA_URL.lstrip("/"))
+    urlpatterns += [
+        re_path(rf"^{media_prefix}(?P<path>.*)$", static_serve, {"document_root": settings.MEDIA_ROOT}),
+    ]

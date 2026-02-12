@@ -43,10 +43,20 @@ class Profile(models.Model):
     @property
     def profile_image_url(self):
         name = getattr(self.image, "name", "")
+        if not name or name == "profiles/default.png":
+            try:
+                return staticfiles_storage.url("tracker/default-avatar.png")
+            except Exception:
+                return f"{settings.MEDIA_URL}profiles/default.png"
+
         storage = getattr(self.image, "storage", None)
-        if name and storage and storage.exists(name):
+        if storage and storage.exists(name):
             return self.image.url
-        return f"{settings.MEDIA_URL}profiles/default.png"
+
+        try:
+            return staticfiles_storage.url("tracker/default-avatar.png")
+        except Exception:
+            return f"{settings.MEDIA_URL}profiles/default.png"
     def __str__(self):
         return self.user.username
     
