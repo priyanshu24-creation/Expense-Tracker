@@ -37,6 +37,11 @@ justify-content:space-between;
 align-items:center;
 box-shadow:0 8px 25px rgba(0,0,0,.25);
 }
+.topbar-actions{
+display:flex;
+align-items:center;
+gap:10px;
+}
 
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;}
 .logo-img{width:36px;height:36px;border-radius:50%;background:white;padding:2px;}
@@ -76,6 +81,21 @@ padding:8px 18px;border-radius:20px;border:none;
 font-weight:600;cursor:pointer;
 text-decoration:none;display:inline-block;
 }
+.install-btn{
+background:rgba(255,255,255,.15);
+color:white;
+padding:8px 16px;
+border-radius:999px;
+border:1px solid rgba(255,255,255,.45);
+font-weight:600;
+cursor:pointer;
+backdrop-filter:blur(6px);
+}
+.install-btn:focus-visible{
+outline:2px solid rgba(255,255,255,.8);
+outline-offset:2px;
+border-radius:999px;
+}
 
 @media (max-width: 600px){
 .topbar{
@@ -85,6 +105,7 @@ gap:8px 12px;
 padding:12px 14px;
 align-items:center;
 }
+.topbar-actions{justify-self:end;}
 .logo{gap:8px;min-width:0;}
 .logo-stack{min-width:0;}
 .logo-title{font-size:18px;line-height:1.1;}
@@ -670,6 +691,8 @@ border-radius:18px 0 0 18px;
 </div>
 </div>
 
+<div class="topbar-actions">
+<button type="button" class="install-btn" id="installPwaBtn" hidden>Install App</button>
 {% if request.user.is_authenticated %}
 <button type="button" class="user-link" id="openDrawerBtn" aria-label="Open profile menu">
 <span class="user-avatar" role="img" aria-label="Profile" style="background-image:url('{{ request.user.profile.profile_image_url }}'),url('{% static 'tracker/default-avatar.png' %}');"></span>
@@ -677,6 +700,7 @@ border-radius:18px 0 0 18px;
 {% else %}
 <a class="auth-btn" href="{% url 'get_started' %}">Get Started</a>
 {% endif %}
+</div>
 </div>
 
 <div class="container">
@@ -986,6 +1010,36 @@ if(e.key==="Escape") toggleDrawer(false);
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
+  });
+}
+
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById("installPwaBtn");
+
+window.addEventListener("beforeinstallprompt",(e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(installBtn){
+    installBtn.hidden = false;
+  }
+});
+
+window.addEventListener("appinstalled",()=>{
+  deferredInstallPrompt = null;
+  if(installBtn){
+    installBtn.hidden = true;
+  }
+});
+
+if(installBtn){
+  installBtn.addEventListener("click",async ()=>{
+    if(!deferredInstallPrompt){
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.hidden = true;
   });
 }
 </script>
