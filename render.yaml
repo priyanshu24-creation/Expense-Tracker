@@ -13,6 +13,10 @@ services:
         fromDatabase:
           name: expense-tracker-db
           property: connectionString
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
