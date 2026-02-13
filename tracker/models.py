@@ -1,3 +1,5 @@
+import os
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -40,23 +42,31 @@ class Profile(models.Model):
     full_name = models.CharField(max_length=100)
     image = models.ImageField(upload_to="profiles/", default="profiles/default.png")
     last_username_change_at = models.DateTimeField(null=True, blank=True)
-    @property
-    def profile_image_url(self):
-        name = getattr(self.image, "name", "")
-        if not name or name == "profiles/default.png":
-            try:
-                return staticfiles_storage.url("tracker/default-avatar.png")
-            except Exception:
-                return f"{settings.MEDIA_URL}profiles/default.png"
 
-        storage = getattr(self.image, "storage", None)
-        if storage and storage.exists(name):
-            return self.image.url
-
+    def _default_avatar_url(self):
         try:
             return staticfiles_storage.url("tracker/default-avatar.png")
         except Exception:
             return f"{settings.MEDIA_URL}profiles/default.png"
+
+    @property
+    def profile_image_url(self):
+        name = getattr(self.image, "name", "")
+        if not name or name == "profiles/default.png":
+            return self._default_avatar_url()
+
+        try:
+            if hasattr(self.image, "path"):
+                try:
+                    path = self.image.path
+                except Exception:
+                    path = None
+                if path and not os.path.exists(path):
+                    return self._default_avatar_url()
+
+            return self.image.url
+        except Exception:
+            return self._default_avatar_url()
     def __str__(self):
         return self.user.username
     

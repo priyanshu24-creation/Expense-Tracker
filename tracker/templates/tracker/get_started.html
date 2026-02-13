@@ -5,6 +5,9 @@
 <title>Get Started</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/png" href="{% static 'tracker/logo.png' %}">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<link rel="apple-touch-icon" href="{% static 'tracker/pwa/icon-192.png' %}">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -47,7 +50,7 @@ padding:0 20px 40px;
 
 .layout{
 display:grid;
-grid-template-columns:1.1fr .9fr;
+grid-template-columns:1fr;
 gap:22px;
 align-items:start;
 }
@@ -218,44 +221,6 @@ Expense Tracker
 
 <div class="page">
 <div class="layout">
-<div class="overview">
-<div class="preview-pill">App Overview</div>
-<h1>Know where your money goes</h1>
-<p>Track income and expenses, view monthly summaries, and keep your finances under control.</p>
-<div class="overview-grid">
-<div class="mini-card">
-<b>Instant balance</b>
-<span>Income and expense totals in one view.</span>
-</div>
-<div class="mini-card">
-<b>Monthly filter</b>
-<span>Review a specific month quickly.</span>
-</div>
-<div class="mini-card">
-<b>Category insights</b>
-<span>Understand spending patterns with charts.</span>
-</div>
-<div class="mini-card">
-<b>Fast entry</b>
-<span>Add transactions in seconds.</span>
-</div>
-</div>
-<div class="overview-list">
-<div class="overview-row">
-<span>Salary • Feb 12</span>
-<span class="badge badge-income">+&#8377;18,450</span>
-</div>
-<div class="overview-row">
-<span>Food • Feb 10</span>
-<span class="badge badge-expense">-&#8377;1,250</span>
-</div>
-<div class="overview-row">
-<span>Transport • Feb 08</span>
-<span class="badge badge-expense">-&#8377;680</span>
-</div>
-</div>
-</div>
-
 <div class="auth-card" id="auth-section" data-auth-mode="{{ auth_mode|default:'login' }}">
 <h2>Get Started</h2>
 <p>Login with OTP or create a new account to use the app.</p>
@@ -293,6 +258,44 @@ Expense Tracker
 <div class="auth-note">Verify your Gmail with OTP to activate your account.</div>
 </form>
 </div>
+
+<div class="overview">
+<div class="preview-pill">App Overview</div>
+<h1>Know where your money goes</h1>
+<p>Track income and expenses, view monthly summaries, and keep your finances under control.</p>
+<div class="overview-grid">
+<div class="mini-card">
+<b>Instant balance</b>
+<span>Income and expense totals in one view.</span>
+</div>
+<div class="mini-card">
+<b>Monthly filter</b>
+<span>Review a specific month quickly.</span>
+</div>
+<div class="mini-card">
+<b>Category insights</b>
+<span>Understand spending patterns with charts.</span>
+</div>
+<div class="mini-card">
+<b>Fast entry</b>
+<span>Add transactions in seconds.</span>
+</div>
+</div>
+<div class="overview-list">
+<div class="overview-row">
+<span>Salary • Feb 12</span>
+<span class="badge badge-income">+&#8377;18,450</span>
+</div>
+<div class="overview-row">
+<span>Food • Feb 10</span>
+<span class="badge badge-expense">-&#8377;1,250</span>
+</div>
+<div class="overview-row">
+<span>Transport • Feb 08</span>
+<span class="badge badge-expense">-&#8377;680</span>
+</div>
+</div>
+</div>
 </div>
 </div>
 
@@ -315,6 +318,12 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   setActive(mode);
 });
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
+  });
+}
 </script>
 
 </body>

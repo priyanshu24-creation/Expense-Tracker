@@ -3,6 +3,7 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.views.static import serve as static_serve
 from django.contrib.auth.views import LogoutView
+from django.views.generic import TemplateView
 import os
 import sys
 import re
@@ -21,6 +22,16 @@ urlpatterns = [
 
     # tracker app
     path('', include('tracker.urls')),
+
+    # PWA assets
+    path("manifest.json", TemplateView.as_view(
+        template_name="manifest.json",
+        content_type="application/json"
+    )),
+    path("service-worker.js", TemplateView.as_view(
+        template_name="service-worker.js",
+        content_type="application/javascript"
+    )),
 ]
 
 # media (profile images etc.)

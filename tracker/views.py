@@ -228,13 +228,62 @@ def edit_profile(request):
     profile_obj, _ = Profile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
-        profile_obj.full_name = request.POST.get("full_name")
+        full_name = (request.POST.get("full_name") or "").strip()
+        username = (request.POST.get("username") or "").strip()
+
+        if not full_name or not username:
+            next_username_change_at = (
+                profile_obj.last_username_change_at + timedelta(days=30)
+                if profile_obj.last_username_change_at
+                else None
+            )
+            return render(request, "edit_profile.html", {
+                "profile": profile_obj,
+                "error": "Full name and username are required",
+                "next_username_change_at": next_username_change_at,
+            })
+
+        if username != request.user.username:
+            if profile_obj.last_username_change_at:
+                next_allowed = profile_obj.last_username_change_at + timedelta(days=30)
+                if timezone.now() < next_allowed:
+                    return render(request, "edit_profile.html", {
+                        "profile": profile_obj,
+                        "error": f"You can change your username again on {next_allowed:%b %d, %Y}.",
+                        "next_username_change_at": next_allowed,
+                    })
+
+            if User.objects.filter(username=username).exclude(id=request.user.id).exists():
+                next_username_change_at = (
+                    profile_obj.last_username_change_at + timedelta(days=30)
+                    if profile_obj.last_username_change_at
+                    else None
+                )
+                return render(request, "edit_profile.html", {
+                    "profile": profile_obj,
+                    "error": "Username already taken",
+                    "next_username_change_at": next_username_change_at,
+                })
+
+            request.user.username = username
+            request.user.save(update_fields=["username"])
+            profile_obj.last_username_change_at = timezone.now()
+
+        profile_obj.full_name = full_name
         if request.FILES.get("image"):
             profile_obj.image = request.FILES["image"]
         profile_obj.save()
         return redirect("profile")
 
-    return render(request, "edit_profile.html", {"profile": profile_obj})
+    next_username_change_at = (
+        profile_obj.last_username_change_at + timedelta(days=30)
+        if profile_obj.last_username_change_at
+        else None
+    )
+    return render(request, "edit_profile.html", {
+        "profile": profile_obj,
+        "next_username_change_at": next_username_change_at,
+    })
 
 
 # =========================

@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Expense Tracker</title>
 <link rel="icon" type="image/png" href="{% static 'tracker/logo.png' %}">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4f46e5">
+<link rel="apple-touch-icon" href="{% static 'tracker/pwa/icon-192.png' %}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -390,6 +393,87 @@ box-shadow:0 4px 12px rgba(0,0,0,.08);
 .income p{color:var(--green);}
 .expense p{color:var(--red);}
 
+/* MONEY METERS */
+.money-meters{
+margin-top:18px;
+padding:16px;
+border-radius:16px;
+background:rgba(255,255,255,.25);
+border:1px solid rgba(255,255,255,.5);
+backdrop-filter:blur(6px);
+}
+.meter-header{
+display:flex;
+align-items:flex-end;
+justify-content:space-between;
+gap:10px;
+margin-bottom:12px;
+}
+.meter-title{
+font-weight:700;
+font-size:16px;
+color:#0b2e13;
+}
+.meter-sub{
+font-size:12px;
+color:#1f2937;
+opacity:.8;
+}
+.meter-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+}
+.meter-card{
+background:white;
+border-radius:14px;
+padding:14px;
+box-shadow:0 8px 18px rgba(0,0,0,.08);
+}
+.meter-label{
+display:flex;
+align-items:center;
+justify-content:space-between;
+font-weight:600;
+color:#0f172a;
+margin-bottom:6px;
+}
+.meter-amount{
+font-size:18px;
+font-weight:700;
+color:#0f172a;
+margin-bottom:10px;
+}
+.meter-percent{
+font-size:12px;
+font-weight:600;
+color:#475569;
+}
+.meter-track{
+height:10px;
+background:#e2e8f0;
+border-radius:999px;
+overflow:hidden;
+}
+.meter-fill{
+height:100%;
+width:0%;
+border-radius:999px;
+background:linear-gradient(135deg,#2563eb,#38bdf8);
+transition:width .6s ease;
+}
+.meter-fill.cash{
+background:linear-gradient(135deg,#16a34a,#4ade80);
+}
+.meter-fill.negative{
+background:linear-gradient(135deg,#dc2626,#f97316);
+}
+.meter-note{
+margin:8px 0 0;
+font-size:11px;
+color:#64748b;
+}
+
 /* FILTER */
 .filter-bar{
 display:flex;
@@ -560,6 +644,16 @@ border-radius:18px 0 0 18px;
 .showcase-panel{padding:14px;}
 .balance-container{padding:18px;}
 .balance-container h1{font-size:28px;}
+.filter-bar{gap:10px;}
+.filter-form{display:grid;grid-template-columns:1fr;align-items:stretch;}
+.filter-form label{width:100%;}
+.filter-form input[type="month"],
+.filter-form button{width:100%;}
+.form-card{grid-template-columns:1fr;}
+.form-card input,.form-card select,.form-card button{width:100%;}
+.form-card button{padding:12px 14px;}
+.meter-grid{grid-template-columns:1fr;}
+.money-meters{padding:14px;}
 }
 </style>
 </head>
@@ -647,6 +741,38 @@ border-radius:18px 0 0 18px;
 <div class="summary-box expense">
 <h3>Expense</h3>
 <p>&#8377;{% if request.user.is_authenticated %}{{ total_expense }}{% else %}5970{% endif %}</p>
+</div>
+</div>
+
+<div class="money-meters">
+<div class="meter-header">
+<div class="meter-title">Money Meters</div>
+<div class="meter-sub">Online vs Cash balance</div>
+</div>
+<div class="meter-grid">
+<div class="meter-card">
+<div class="meter-label">
+<span>Online Money</span>
+<span class="meter-percent">0%</span>
+</div>
+<div class="meter-amount">&#8377;{% if request.user.is_authenticated %}{{ online_balance }}{% else %}8200{% endif %}</div>
+<div class="meter-track">
+<div class="meter-fill online" data-value="{% if request.user.is_authenticated %}{{ online_balance }}{% else %}8200{% endif %}"></div>
+</div>
+<div class="meter-note">Digital transfers, UPI, cards.</div>
+</div>
+
+<div class="meter-card">
+<div class="meter-label">
+<span>Cash Money</span>
+<span class="meter-percent">0%</span>
+</div>
+<div class="meter-amount">&#8377;{% if request.user.is_authenticated %}{{ cash_balance }}{% else %}4280{% endif %}</div>
+<div class="meter-track">
+<div class="meter-fill cash" data-value="{% if request.user.is_authenticated %}{{ cash_balance }}{% else %}4280{% endif %}"></div>
+</div>
+<div class="meter-note">Notes, coins, cash wallet.</div>
+</div>
 </div>
 </div>
 </div>
@@ -788,7 +914,6 @@ datasets:[{data: JSON.parse('{{ chart_values|escapejs }}')}]
 <a href="{% url 'profile' %}">View Profile</a>
 <a href="{% url 'edit_profile' %}">Edit Profile</a>
 <a href="{% url 'password_change' %}">Change Password</a>
-<a href="{% url 'forgot_password' %}">Forgot Password (OTP)</a>
 <form method="post" action="{% url 'logout' %}">
 {% csrf_token %}
 <button type="submit">Sign Out</button>
@@ -833,12 +958,36 @@ document.addEventListener("DOMContentLoaded",()=>{
     scrim.addEventListener("touchstart",e=>{e.preventDefault();toggleDrawer(false);},{passive:false});
   }
 
+  const meterFills = Array.from(document.querySelectorAll(".meter-fill"));
+  if(meterFills.length){
+    const values = meterFills.map(el => parseFloat(el.dataset.value || "0"));
+    const totalAbs = values.reduce((sum, value) => sum + Math.abs(value), 0);
+    meterFills.forEach((el, index) => {
+      const value = values[index];
+      if(value < 0){
+        el.classList.add("negative");
+      }
+      const width = totalAbs ? (Math.abs(value) / totalAbs) * 100 : 0;
+      el.style.width = `${width.toFixed(1)}%`;
+      const percentLabel = el.closest(".meter-card")?.querySelector(".meter-percent");
+      if(percentLabel){
+        percentLabel.textContent = `${totalAbs ? (Math.abs(value) / totalAbs * 100).toFixed(0) : 0}%`;
+      }
+    });
+  }
+
   // auth section is decorative on the landing page now
 });
 
 document.addEventListener("keydown",e=>{
 if(e.key==="Escape") toggleDrawer(false);
 });
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
+  });
+}
 </script>
 
 </body>
