@@ -13,8 +13,12 @@ import random
 
 from .models import Transaction, Profile, EmailOTP
 
+import logging
+
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
+
+logger = logging.getLogger(__name__)
 
 
 # =========================
@@ -272,7 +276,20 @@ def edit_profile(request):
         profile_obj.full_name = full_name
         if request.FILES.get("image"):
             profile_obj.image = request.FILES["image"]
-        profile_obj.save()
+        try:
+            profile_obj.save()
+        except Exception:
+            logger.exception("Profile update failed for user_id=%s", request.user.id)
+            next_username_change_at = (
+                profile_obj.last_username_change_at + timedelta(days=30)
+                if profile_obj.last_username_change_at
+                else None
+            )
+            return render(request, "edit_profile.html", {
+                "profile": profile_obj,
+                "error": "Profile update failed. Please try again.",
+                "next_username_change_at": next_username_change_at,
+            })
         return redirect("profile")
 
     next_username_change_at = (

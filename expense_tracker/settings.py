@@ -16,7 +16,12 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-USE_CLOUDINARY = bool(os.getenv("CLOUDINARY_URL"))
+RAW_CLOUDINARY_URL = (os.getenv("CLOUDINARY_URL") or "").strip().strip("'").strip('"')
+CLOUDINARY_URL_HAS_PLACEHOLDER = any(
+    token in RAW_CLOUDINARY_URL
+    for token in ("<", ">", "your_api_key", "your_api_secret")
+)
+USE_CLOUDINARY = bool(RAW_CLOUDINARY_URL) and not CLOUDINARY_URL_HAS_PLACEHOLDER
 
 ALLOWED_HOSTS = [
     ".onrender.com",
@@ -181,7 +186,7 @@ STORAGES = {
 
 if USE_CLOUDINARY:
     CLOUDINARY_STORAGE = {
-        "CLOUDINARY_URL": os.getenv("CLOUDINARY_URL"),
+        "CLOUDINARY_URL": RAW_CLOUDINARY_URL,
     }
 
 # ======================
