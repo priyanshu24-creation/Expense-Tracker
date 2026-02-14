@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv()
 
@@ -14,6 +15,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 
 DEBUG = os.getenv("DEBUG", "True") == "True"
+
+USE_CLOUDINARY = bool(os.getenv("CLOUDINARY_URL"))
 
 ALLOWED_HOSTS = [
     ".onrender.com",
@@ -40,6 +43,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "tracker",
 ]
+
+if USE_CLOUDINARY:
+    INSTALLED_APPS += [
+        "cloudinary_storage",
+        "cloudinary",
+    ]
 
 # ======================
 # MIDDLEWARE
@@ -101,6 +110,16 @@ else:
         }
     }
 
+if not DEBUG and not DATABASE_URL:
+    raise ImproperlyConfigured(
+        "DATABASE_URL must be set when DEBUG=False to avoid data loss in production."
+    )
+
+if not DEBUG and SECRET_KEY == "dev-secret-key":
+    raise ImproperlyConfigured(
+        "SECRET_KEY must be set to a secure value when DEBUG=False."
+    )
+
 # ======================
 # PASSWORD VALIDATION
 # ======================
@@ -148,6 +167,22 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+DEFAULT_FILE_STORAGE = (
+    "cloudinary_storage.storage.MediaCloudinaryStorage"
+    if USE_CLOUDINARY
+    else "django.core.files.storage.FileSystemStorage"
+)
+
+STORAGES = {
+    "default": {"BACKEND": DEFAULT_FILE_STORAGE},
+    "staticfiles": {"BACKEND": STATICFILES_STORAGE},
+}
+
+if USE_CLOUDINARY:
+    CLOUDINARY_STORAGE = {
+        "CLOUDINARY_URL": os.getenv("CLOUDINARY_URL"),
+    }
 
 # ======================
 # SENDGRID EMAIL CONFIG

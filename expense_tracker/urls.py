@@ -35,7 +35,12 @@ urlpatterns = [
 ]
 
 # media (profile images etc.)
-serve_media = settings.DEBUG or os.getenv("SERVE_MEDIA", "False") == "True" or "runserver" in sys.argv
+serve_media = (
+    settings.DEBUG
+    or os.getenv("SERVE_MEDIA", "False") == "True"
+    or "runserver" in sys.argv
+    or not getattr(settings, "USE_CLOUDINARY", False)
+)
 if serve_media:
     media_prefix = re.escape(settings.MEDIA_URL.lstrip("/"))
     urlpatterns += [
