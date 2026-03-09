@@ -218,6 +218,9 @@ EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 # ======================
 
 USE_GMAIL_SMTP = os.getenv("USE_GMAIL_SMTP", "False") == "True"
+# Avoid SMTP in production (most PaaS block outbound SMTP ports).
+if not DEBUG:
+    USE_GMAIL_SMTP = False
 if USE_GMAIL_SMTP:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = "smtp.gmail.com"
