@@ -8,7 +8,6 @@ from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.db.models import Sum
 
 from datetime import date, timedelta
@@ -25,6 +24,7 @@ from .models import (
     Profile,
     EmailOTP,
 )
+from .services.email_sender import send_app_email
 from .services.analytics import (
     aggregate_totals,
     build_budget_summary,
@@ -175,83 +175,7 @@ def _build_dashboard_context(request):
 
 
 def _send_email(to_email, subject, body):
-    if getattr(settings, "USE_GMAIL_SMTP", False):
-        try:
-            send_mail(
-                subject,
-                body,
-                settings.DEFAULT_FROM_EMAIL,
-                [to_email],
-                fail_silently=False,
-            )
-            return None
-        except Exception as exc:
-            logger.exception("SMTP send failed")
-            if settings.DEBUG:
-                return f"Failed to send email: {exc}"
-            return "Failed to send email. Try again."
-
-    if not settings.SENDGRID_API_KEY:
-        return "Email service not configured"
-
-    try:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail
-    except Exception:
-        return "Email service not configured"
-
-    try:
-        message = Mail(
-            settings.DEFAULT_FROM_EMAIL,
-            to_email,
-            subject,
-            plain_text_content=body,
-        )
-    except TypeError:
-        from sendgrid.helpers.mail import Content, Email
-
-        message = Mail(
-            Email(settings.DEFAULT_FROM_EMAIL),
-            subject,
-            Email(to_email),
-            Content("text/plain", body),
-        )
-
-    try:
-        sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
-        response = sg.client.mail.send.post(request_body=message.get())
-        status = getattr(response, "status_code", None)
-        if status and not (200 <= status < 300):
-            body_text = getattr(response, "body", b"")
-            if isinstance(body_text, bytes):
-                body_text = body_text.decode("utf-8", "ignore")
-            if settings.DEBUG:
-                return f"Failed to send email: SendGrid {status} {body_text}"
-            return "Failed to send email. Try again."
-        if settings.DEBUG:
-            message_id = None
-            try:
-                headers = getattr(response, "headers", None) or {}
-                message_id = (
-                    headers.get("X-Message-Id")
-                    or headers.get("X-Message-ID")
-                    or headers.get("x-message-id")
-                )
-            except Exception:
-                message_id = None
-            logger.info(
-                "SendGrid accepted email to=%s status=%s message_id=%s",
-                to_email,
-                status,
-                message_id,
-            )
-    except Exception as exc:
-        logger.exception("SendGrid send failed")
-        if settings.DEBUG:
-            return f"Failed to send email: {exc}"
-        return "Failed to send email. Try again."
-
-    return None
+    return send_app_email(to_email, subject, body)
 
 
 def _send_otp_email(user, subject):

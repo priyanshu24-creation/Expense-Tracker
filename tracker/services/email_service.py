@@ -2,14 +2,13 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Optional
 
-from django.conf import settings
-from django.core.mail import send_mail
 from django.utils import timezone
 from django.db.models import Sum
 
 from tracker.models import EmailLog, Transaction
 from tracker.services.prediction_service import _month_start
 from tracker.models import Transaction as TransactionModel
+from tracker.services.email_sender import send_app_email
 
 
 @dataclass
@@ -18,10 +17,6 @@ class EmailContent:
     body: str
     email_type: str
     related_month: date
-
-
-def _from_email() -> str:
-    return getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@example.com")
 
 
 def _format_currency(amount: float) -> str:
@@ -100,13 +95,13 @@ def send_behavior_email(user, email_content: EmailContent) -> bool:
     if not should_send_email(user, email_content.email_type, email_content.related_month):
         return False
 
-    send_mail(
-        subject=email_content.subject,
-        message=email_content.body,
-        from_email=_from_email(),
-        recipient_list=[user.email],
-        fail_silently=True,
+    error = send_app_email(
+        user.email,
+        email_content.subject,
+        email_content.body,
     )
+    if error:
+        return False
 
     EmailLog.objects.create(
         user=user,
