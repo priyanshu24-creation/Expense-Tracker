@@ -1,12 +1,13 @@
 {% load static %}
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const CACHE_NAME = `expense-tracker-${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   "/manifest.json",
   "{% static 'tracker/pwa/icon-192.png' %}",
   "{% static 'tracker/pwa/icon-512.png' %}",
   "{% static 'tracker/logo.png' %}",
-  "{% static 'tracker/default-avatar.png' %}"
+  "{% static 'tracker/default-avatar.png' %}",
+  "{% static 'tracker/dashboard.js' %}"
 ];
 
 self.addEventListener("install", event => {
@@ -34,14 +35,16 @@ self.addEventListener("fetch", event => {
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(
       caches.match(event.request).then(cached => {
-        if (cached) {
-          return cached;
-        }
-        return fetch(event.request).then(response => {
+        const fetchPromise = fetch(event.request).then(response => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
           return response;
         });
+        if (cached) {
+          event.waitUntil(fetchPromise);
+          return cached;
+        }
+        return fetchPromise;
       })
     );
     return;

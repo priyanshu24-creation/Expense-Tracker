@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
     "tracker",
 ]
 
@@ -98,8 +99,9 @@ WSGI_APPLICATION = "expense_tracker.wsgi.application"
 # ======================
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+USE_REMOTE_DB = os.getenv("USE_REMOTE_DB", "False") == "True"
 
-if DATABASE_URL:
+if DATABASE_URL and (not DEBUG or USE_REMOTE_DB):
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
@@ -200,7 +202,71 @@ DEFAULT_FROM_EMAIL = os.getenv(
 )
 
 # ======================
+# DJANGO EMAIL BACKEND
+# ======================
+
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.sendgrid.net")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "apikey")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", SENDGRID_API_KEY or "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+
+# ======================
+# GMAIL SMTP (DEV/ALT)
+# ======================
+
+USE_GMAIL_SMTP = os.getenv("USE_GMAIL_SMTP", "False") == "True"
+if USE_GMAIL_SMTP:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.getenv("GMAIL_USER") or DEFAULT_FROM_EMAIL
+    EMAIL_HOST_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+    if EMAIL_HOST_USER:
+        DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# ======================
+# PREDICTION THRESHOLDS
+# ======================
+
+PREDICTION_OVR_PROJ_THRESHOLD = float(os.getenv("PREDICTION_OVR_PROJ_THRESHOLD", "0.15"))
+PREDICTION_OVR_PACE_THRESHOLD = float(os.getenv("PREDICTION_OVR_PACE_THRESHOLD", "0.20"))
+PREDICTION_UNDER_THRESHOLD = float(os.getenv("PREDICTION_UNDER_THRESHOLD", "0.60"))
+PREDICTION_STABLE_THRESHOLD = float(os.getenv("PREDICTION_STABLE_THRESHOLD", "0.10"))
+PREDICTION_FIRST_WEEK_DAYS = int(os.getenv("PREDICTION_FIRST_WEEK_DAYS", "7"))
+
+# ======================
 # DEFAULT PK
 # ======================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ======================
+# LOGGING
+# ======================
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "ignore_broken_pipe": {
+            "()": "expense_tracker.logging_filters.IgnoreBrokenPipeFilter",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "filters": ["ignore_broken_pipe"],
+        },
+    },
+    "loggers": {
+        "django.server": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

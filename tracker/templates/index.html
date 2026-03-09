@@ -1,7 +1,8 @@
-{% load static %}
+{% load static formatting humanize %}
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Expense Tracker</title>
 <link rel="icon" type="image/png" href="{% static 'tracker/logo.png' %}">
@@ -9,6 +10,7 @@
 <meta name="theme-color" content="#4f46e5">
 <link rel="apple-touch-icon" href="{% static 'tracker/pwa/icon-192.png' %}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -17,14 +19,32 @@
 --secondary:#3b82f6;
 --green:#059669;
 --red:#dc2626;
+--bg-gradient:linear-gradient(135deg,#eef2ff,#f8fafc);
+--card-bg:#ffffff;
+--surface:#f8fafc;
+--text:#0f172a;
+--muted:#64748b;
+--border:#e2e8f0;
+--shadow:0 12px 28px rgba(0,0,0,.12);
 }
 
 *{box-sizing:border-box;}
 body{
 margin:0;
 font-family:Poppins,sans-serif;
-background:linear-gradient(135deg,#eef2ff,#f8fafc);
-color:#0f172a;
+background:var(--bg-gradient);
+color:var(--text);
+transition:background .3s ease,color .3s ease;
+}
+
+body.theme-dark{
+--bg-gradient:radial-gradient(circle at top,#0b1220,#05070f);
+--card-bg:#0f172a;
+--surface:#0b1220;
+--text:#e2e8f0;
+--muted:#94a3b8;
+--border:#1f2a44;
+--shadow:0 12px 28px rgba(0,0,0,.45);
 }
 
 /* TOPBAR */
@@ -41,6 +61,8 @@ box-shadow:0 8px 25px rgba(0,0,0,.25);
 display:flex;
 align-items:center;
 gap:10px;
+flex-wrap:wrap;
+justify-content:flex-end;
 }
 
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;}
@@ -676,6 +698,491 @@ border-radius:18px 0 0 18px;
 .meter-grid{grid-template-columns:1fr;}
 .money-meters{padding:14px;}
 }
+
+/* DASHBOARD */
+.section-card{
+background:var(--card-bg);
+border-radius:18px;
+box-shadow:var(--shadow);
+padding:18px;
+display:flex;
+flex-direction:column;
+gap:14px;
+}
+.section-header{
+display:flex;
+align-items:flex-start;
+justify-content:space-between;
+gap:12px;
+flex-wrap:wrap;
+}
+.section-title{
+font-size:16px;
+font-weight:700;
+}
+.section-subtitle{
+font-size:12px;
+color:var(--muted);
+}
+.dashboard-grid{
+display:grid;
+gap:18px;
+}
+.filter-panel .filter-form{
+display:grid;
+grid-template-columns:repeat(6,minmax(140px,1fr));
+gap:10px;
+align-items:end;
+}
+.filter-panel{
+margin-bottom:18px;
+}
+.filter-panel label{
+display:flex;
+flex-direction:column;
+font-size:12px;
+gap:6px;
+color:var(--muted);
+}
+.filter-panel input,
+.filter-panel select{
+padding:9px 10px;
+border-radius:10px;
+border:1px solid var(--border);
+background:var(--surface);
+color:var(--text);
+}
+.filter-panel button{
+background:#111827;
+color:white;
+border:none;
+border-radius:10px;
+padding:10px 14px;
+font-weight:600;
+cursor:pointer;
+}
+.filter-actions{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+.inline-form{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+}
+.inline-form input,
+.inline-form select{
+padding:9px 10px;
+border-radius:10px;
+border:1px solid var(--border);
+background:var(--surface);
+color:var(--text);
+}
+.inline-form button{
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:white;
+border:none;
+border-radius:10px;
+padding:10px 14px;
+font-weight:600;
+cursor:pointer;
+}
+.status-pill,
+.budget-pill{
+padding:6px 10px;
+border-radius:999px;
+font-size:11px;
+font-weight:600;
+}
+.status-pill.success{background:#dcfce7;color:#166534;}
+.status-pill.warning{background:#fef9c3;color:#854d0e;}
+.status-pill.danger{background:#fee2e2;color:#b91c1c;}
+.status-pill.neutral{background:#e2e8f0;color:#475569;}
+.budget-pill.warning{background:#fef3c7;color:#92400e;}
+.budget-pill.danger{background:#fee2e2;color:#b91c1c;}
+.budget-pill.neutral{background:#e2e8f0;color:#475569;}
+
+.budget-progress{
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+.budget-meta{
+display:flex;
+justify-content:space-between;
+font-size:12px;
+color:var(--muted);
+}
+.progress-bar{
+height:10px;
+background:var(--border);
+border-radius:999px;
+overflow:hidden;
+}
+.progress-fill{
+height:100%;
+background:linear-gradient(135deg,#2563eb,#38bdf8);
+width:0%;
+transition:width .4s ease;
+}
+.progress-fill.warning{
+background:linear-gradient(135deg,#f59e0b,#f97316);
+}
+.progress-fill.over{
+background:linear-gradient(135deg,#dc2626,#f97316);
+}
+.alert{
+padding:10px 12px;
+border-radius:12px;
+font-size:12px;
+font-weight:600;
+}
+.alert.warning{background:#fef3c7;color:#92400e;}
+.alert.danger{background:#fee2e2;color:#b91c1c;}
+
+.category-budget-list{
+display:grid;
+gap:12px;
+}
+.category-budget-row{
+padding:12px;
+border-radius:12px;
+border:1px solid var(--border);
+background:var(--surface);
+display:flex;
+flex-direction:column;
+gap:8px;
+}
+.category-budget-row.over{
+border-color:#fca5a5;
+background:#fef2f2;
+}
+.category-budget-header{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:10px;
+}
+.category-budget-meta{
+font-size:12px;
+color:var(--muted);
+}
+.muted{color:var(--muted);}
+
+.insight-list{
+display:grid;
+gap:10px;
+}
+.insight-card{
+padding:12px;
+border-radius:12px;
+border:1px solid var(--border);
+background:var(--surface);
+font-size:13px;
+}
+.insight-card.positive{border-color:#86efac;background:#ecfdf3;color:#166534;}
+.insight-card.negative{border-color:#fecaca;background:#fef2f2;color:#b91c1c;}
+.insight-card.neutral{border-color:var(--border);color:var(--text);}
+
+.projection-grid{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+flex-wrap:wrap;
+}
+.projection-value{
+font-size:28px;
+font-weight:700;
+}
+.projection-note{
+font-size:12px;
+color:var(--muted);
+max-width:420px;
+}
+
+.chart-grid{
+display:grid;
+grid-template-columns:repeat(3,minmax(220px,1fr));
+gap:16px;
+}
+.chart-card{
+background:var(--surface);
+border-radius:14px;
+padding:12px;
+border:1px solid var(--border);
+}
+.chart-card h4{
+margin:0 0 10px;
+font-size:13px;
+color:var(--muted);
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:repeat(7,minmax(140px,1fr));
+gap:10px;
+align-items:end;
+}
+.weekday-picker{
+grid-column:1/-1;
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+align-items:center;
+background:var(--surface);
+border:1px dashed var(--border);
+border-radius:12px;
+padding:8px 10px;
+}
+.weekday-label{
+font-size:12px;
+color:var(--muted);
+margin-right:6px;
+}
+.weekday-chip{
+display:flex;
+align-items:center;
+gap:6px;
+padding:4px 8px;
+border-radius:999px;
+background:#e2e8f0;
+font-size:12px;
+cursor:pointer;
+}
+.weekday-chip input{
+accent-color:var(--primary);
+}
+.weekday-hint{
+font-size:11px;
+color:var(--muted);
+width:100%;
+}
+.form-grid input,
+.form-grid select{
+padding:9px 10px;
+border-radius:10px;
+border:1px solid var(--border);
+background:var(--surface);
+color:var(--text);
+}
+.form-grid button{
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:white;
+border:none;
+border-radius:10px;
+padding:10px 14px;
+font-weight:600;
+cursor:pointer;
+}
+.hint{
+grid-column:1/-1;
+font-size:12px;
+color:var(--muted);
+}
+
+.transaction-list{
+display:grid;
+gap:10px;
+}
+.transaction-row{
+display:grid;
+grid-template-columns:1.4fr .6fr auto;
+gap:12px;
+align-items:center;
+padding:12px;
+border-radius:12px;
+border:1px solid var(--border);
+background:var(--surface);
+}
+.transaction-row.income{border-left:4px solid var(--green);}
+.transaction-row.expense{border-left:4px solid var(--red);}
+.transaction-title{font-weight:600;}
+.transaction-meta{font-size:12px;color:var(--muted);}
+.transaction-amount{font-weight:700;}
+.transaction-actions{
+display:flex;
+gap:8px;
+justify-content:flex-end;
+}
+.action-btn{
+border:1px solid var(--border);
+background:transparent;
+padding:6px 10px;
+border-radius:8px;
+cursor:pointer;
+font-weight:600;
+font-size:12px;
+color:var(--text);
+}
+.action-btn.danger{
+border-color:#fecaca;
+color:#b91c1c;
+background:#fef2f2;
+}
+
+.recurring-list,
+.goal-list{
+display:grid;
+gap:10px;
+}
+.recurring-row,
+.goal-row{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+padding:12px;
+border-radius:12px;
+border:1px solid var(--border);
+background:var(--surface);
+}
+.recurring-meta{
+display:flex;
+align-items:center;
+gap:12px;
+}
+.recurring-actions{
+display:flex;
+gap:8px;
+}
+.goal-meta{
+display:flex;
+flex-direction:column;
+gap:8px;
+min-width:220px;
+}
+.goal-actions{
+display:flex;
+align-items:center;
+gap:8px;
+justify-content:flex-end;
+}
+.empty-state{
+padding:18px;
+border-radius:14px;
+border:1px dashed var(--border);
+background:var(--surface);
+text-align:center;
+}
+.empty-state h4{margin:0 0 6px;}
+
+.theme-toggle{
+background:rgba(255,255,255,.18);
+color:white;
+border:1px solid rgba(255,255,255,.45);
+padding:8px 14px;
+border-radius:999px;
+font-weight:600;
+cursor:pointer;
+}
+
+.modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.5);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:1200;
+}
+.modal.open{display:flex;}
+.modal-card{
+background:var(--card-bg);
+color:var(--text);
+border-radius:16px;
+padding:20px;
+width:min(420px,90vw);
+box-shadow:var(--shadow);
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+.modal-card h3{
+margin:0;
+font-size:18px;
+}
+.modal-card form{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:10px;
+}
+.modal-card form input,
+.modal-card form select{
+width:100%;
+padding:10px 12px;
+border-radius:10px;
+border:1px solid var(--border);
+background:var(--surface);
+color:var(--text);
+}
+.modal-card form input[type="text"]{
+grid-column:1/-1;
+}
+.modal-card form input[type="date"]{
+min-width:0;
+}
+.modal-actions{
+display:flex;
+gap:10px;
+justify-content:flex-end;
+}
+.modal-actions .action-btn{
+padding:8px 14px;
+}
+.modal-card form .modal-actions{
+grid-column:1/-1;
+margin-top:6px;
+}
+@media (max-width: 520px){
+.modal-card form{
+grid-template-columns:1fr;
+}
+}
+
+body.theme-dark .summary-box,
+body.theme-dark .overview-card,
+body.theme-dark .auth-section,
+body.theme-dark .form-card,
+body.theme-dark .chart-box,
+body.theme-dark .drawer{
+background:var(--card-bg);
+color:var(--text);
+border-color:var(--border);
+}
+body.theme-dark .overview-row,
+body.theme-dark .panel-row,
+body.theme-dark .meter-card{
+background:var(--surface);
+border-color:var(--border);
+}
+body.theme-dark .weekday-chip{
+background:#1f2a44;
+}
+
+@media (max-width: 1100px){
+.chart-grid{grid-template-columns:1fr;}
+.form-grid{grid-template-columns:repeat(2,minmax(140px,1fr));}
+.filter-panel .filter-form{grid-template-columns:repeat(2,minmax(140px,1fr));}
+}
+@media (max-width: 520px){
+.filter-panel .filter-form{grid-template-columns:1fr;}
+.form-grid{grid-template-columns:1fr;}
+.inline-form{flex-direction:column;align-items:stretch;}
+.inline-form input,
+.inline-form select,
+.inline-form button{width:100%;}
+.filter-actions{width:100%;}
+.filter-actions .ghost-btn{width:100%;text-align:center;}
+}
+@media (max-width: 720px){
+.transaction-row{grid-template-columns:1fr;gap:6px;}
+.transaction-actions{justify-content:flex-start;}
+.recurring-row,
+.goal-row{flex-direction:column;align-items:flex-start;}
+.goal-meta{width:100%;}
+}
 </style>
 </head>
 
@@ -692,6 +1199,7 @@ border-radius:18px 0 0 18px;
 </div>
 
 <div class="topbar-actions">
+<button type="button" class="theme-toggle" id="themeToggle">Dark Mode</button>
 <button type="button" class="install-btn" id="installPwaBtn" hidden>Install App</button>
 {% if request.user.is_authenticated %}
 <button type="button" class="user-link" id="openDrawerBtn" aria-label="Open profile menu">
@@ -756,15 +1264,15 @@ border-radius:18px 0 0 18px;
 <div class="preview-pill">Preview</div>
 {% endif %}
 <h2>{% if request.user.is_authenticated %}Your Balance{% else %}Monthly Snapshot{% endif %}</h2>
-<h1>&#8377;{% if request.user.is_authenticated %}{{ balance }}{% else %}12480{% endif %}</h1>
+<h1>{% if request.user.is_authenticated %}{{ balance|currency }}{% else %}₹12,480.00{% endif %}</h1>
 <div class="summary">
 <div class="summary-box income">
 <h3>Income</h3>
-<p>&#8377;{% if request.user.is_authenticated %}{{ total_income }}{% else %}18450{% endif %}</p>
+<p>{% if request.user.is_authenticated %}{{ total_income|currency }}{% else %}₹18,450.00{% endif %}</p>
 </div>
 <div class="summary-box expense">
 <h3>Expense</h3>
-<p>&#8377;{% if request.user.is_authenticated %}{{ total_expense }}{% else %}5970{% endif %}</p>
+<p>{% if request.user.is_authenticated %}{{ total_expense|currency }}{% else %}₹5,970.00{% endif %}</p>
 </div>
 </div>
 
@@ -779,7 +1287,7 @@ border-radius:18px 0 0 18px;
 <span>Online Money</span>
 <span class="meter-percent">0%</span>
 </div>
-<div class="meter-amount">&#8377;{% if request.user.is_authenticated %}{{ online_balance }}{% else %}8200{% endif %}</div>
+<div class="meter-amount">{% if request.user.is_authenticated %}{{ online_balance|currency }}{% else %}₹8,200.00{% endif %}</div>
 <div class="meter-track">
 <div class="meter-fill online" data-value="{% if request.user.is_authenticated %}{{ online_balance }}{% else %}8200{% endif %}"></div>
 </div>
@@ -791,7 +1299,7 @@ border-radius:18px 0 0 18px;
 <span>Cash Money</span>
 <span class="meter-percent">0%</span>
 </div>
-<div class="meter-amount">&#8377;{% if request.user.is_authenticated %}{{ cash_balance }}{% else %}4280{% endif %}</div>
+<div class="meter-amount">{% if request.user.is_authenticated %}{{ cash_balance|currency }}{% else %}₹4,280.00{% endif %}</div>
 <div class="meter-track">
 <div class="meter-fill cash" data-value="{% if request.user.is_authenticated %}{{ cash_balance }}{% else %}4280{% endif %}"></div>
 </div>
@@ -865,57 +1373,416 @@ border-radius:18px 0 0 18px;
 
 {% if request.user.is_authenticated %}
 
-<div class="filter-bar">
+<section class="filter-panel section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Smart Filters</div>
+<div class="section-subtitle">Combine month, date range, category, and payment method.</div>
+</div>
+<div class="filter-actions">
+<a class="ghost-btn" href="{% url 'export_transactions' %}?{{ filter_query }}">Export Transactions</a>
+<a class="ghost-btn" href="{% url 'export_summary' %}?{{ filter_query }}">Export Summary</a>
+</div>
+</div>
 <form method="get" class="filter-form">
-<label for="monthFilter">Filter by month</label>
-<input type="month" id="monthFilter" name="month" value="{{ selected_month }}">
-<button type="submit">Filter</button>
-</form>
-{% if selected_month %}
+<label>
+Month
+<input type="month" name="month" value="{{ filters.month|date:'Y-m' }}">
+</label>
+<label>
+Start
+<input type="date" name="start" value="{{ filters.start_date|date:'Y-m-d' }}">
+</label>
+<label>
+End
+<input type="date" name="end" value="{{ filters.end_date|date:'Y-m-d' }}">
+</label>
+<label>
+Category
+<select name="category">
+<option value="all">All</option>
+{% for key,label in category_options %}
+<option value="{{ key }}" {% if filters.category == key %}selected{% endif %}>{{ label }}</option>
+{% endfor %}
+</select>
+</label>
+<label>
+Payment
+<select name="payment">
+<option value="all">All</option>
+{% for key,label in payment_options %}
+<option value="{{ key }}" {% if filters.payment_mode == key %}selected{% endif %}>{{ label }}</option>
+{% endfor %}
+</select>
+</label>
+<label>
+Sort
+<select name="sort">
+<option value="date_desc" {% if filters.sort == "date_desc" %}selected{% endif %}>Newest</option>
+<option value="date_asc" {% if filters.sort == "date_asc" %}selected{% endif %}>Oldest</option>
+<option value="amount_desc" {% if filters.sort == "amount_desc" %}selected{% endif %}>Amount High → Low</option>
+<option value="amount_asc" {% if filters.sort == "amount_asc" %}selected{% endif %}>Amount Low → High</option>
+</select>
+</label>
+<button type="submit">Apply Filters</button>
+{% if has_filters %}
 <a class="filter-clear" href="{% url 'home' %}">Clear</a>
 {% endif %}
+</form>
+</section>
+
+<div class="dashboard-grid">
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Monthly Budget</div>
+<div class="section-subtitle">Tracking for {{ budget_month|date:"F Y" }}</div>
+</div>
+{% if budget_summary.status == "over" %}
+<span class="status-pill danger">Over Budget</span>
+{% elif budget_summary.status == "warning" %}
+<span class="status-pill warning">80% Used</span>
+{% elif budget_summary.status == "ok" %}
+<span class="status-pill success">On Track</span>
+{% else %}
+<span class="status-pill neutral">Not Set</span>
+{% endif %}
 </div>
 
-<form method="POST" class="form-card">
+<form method="post" action="{% url 'set_monthly_budget' %}" class="inline-form">
 {% csrf_token %}
-<select name="type"><option value="income">Income</option><option value="expense">Expense</option></select>
-<select name="payment_mode"><option value="online">Online Money</option><option value="cash">Cash Money</option></select>
-<input type="number" name="amount" placeholder="Amount" required>
-<select name="category">
-<option value="food">Food</option>
-<option value="transport">Transport</option>
-<option value="rent">Rent</option>
-<option value="shopping">Shopping</option>
-<option value="salary">Salary</option>
-<option value="other">Other</option>
-</select>
-<input type="date" name="date" required>
-<button>Add</button>
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<input type="month" name="month" value="{{ budget_month|date:'Y-m' }}" required>
+<input type="number" step="0.01" name="total_budget" placeholder="Set total budget" value="{% if budget_summary.total_budget %}{{ budget_summary.total_budget }}{% endif %}">
+<button type="submit">Save Budget</button>
 </form>
 
-<ul>
-{% for t in transactions %}
-<li class="{{ t.type }}">
-<span>{{ t.date }} &mdash; {{ t.get_category_display }}</span>
-<span>&#8377;{{ t.amount }} <a href="/delete/{{ t.id }}/">&times;</a></span>
-</li>
-{% endfor %}
-</ul>
-
-{% if chart_values %}
-<div class="chart-box">
-<canvas id="expenseChart"></canvas>
+<div class="budget-progress">
+<div class="budget-meta">
+<span>Used: {{ budget_summary.used_percent|floatformat:1 }}%</span>
+<span>Remaining: {{ budget_summary.remaining|currency }}</span>
 </div>
-<script>
-new Chart(document.getElementById('expenseChart'),{
-type:'pie',
-data:{
-labels: JSON.parse('{{ chart_labels|escapejs }}'),
-datasets:[{data: JSON.parse('{{ chart_values|escapejs }}')}]
-}
-});
-</script>
+<div class="progress-bar">
+<div class="progress-fill {% if budget_summary.status == 'over' %}over{% elif budget_summary.status == 'warning' %}warning{% endif %}" style="width:{{ budget_summary.display_percent|floatformat:0 }}%"></div>
+</div>
+{% if budget_summary.status == "warning" %}
+<div class="alert warning">Warning: You have used 80% of your monthly budget.</div>
+{% elif budget_summary.status == "over" %}
+<div class="alert danger">Over-budget alert: You exceeded the limit by {{ budget_summary.remaining|currency|slice:"1:" }}.</div>
 {% endif %}
+</div>
+</section>
+
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Category Budgets</div>
+<div class="section-subtitle">Set monthly caps and see real-time usage.</div>
+</div>
+</div>
+
+<form method="post" action="{% url 'set_category_budget' %}" class="inline-form">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<input type="month" name="month" value="{{ budget_month|date:'Y-m' }}" required>
+<select name="category">
+{% for key,label in category_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<input type="number" step="0.01" name="amount" placeholder="Set category budget">
+<button type="submit">Save Category</button>
+</form>
+
+<div class="category-budget-list">
+{% for row in category_budget_rows %}
+<div class="category-budget-row {% if row.over %}over{% endif %}">
+<div class="category-budget-header">
+<div>
+<strong>{{ row.label }}</strong>
+<div class="muted">
+{% if row.budget %}
+{{ row.spent|currency }} / {{ row.budget|currency }}
+{% else %}
+No budget set
+{% endif %}
+</div>
+</div>
+<div class="budget-pill {% if row.over %}danger{% elif row.percent >= 80 %}warning{% else %}neutral{% endif %}">
+{{ row.percent|floatformat:0 }}%
+</div>
+</div>
+<div class="progress-bar">
+<div class="progress-fill {% if row.over %}over{% elif row.percent >= 80 %}warning{% endif %}" style="width:{{ row.display_percent|floatformat:0 }}%"></div>
+</div>
+<div class="category-budget-meta">
+<span>Remaining: {{ row.remaining|currency }}</span>
+</div>
+</div>
+{% endfor %}
+</div>
+</section>
+
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Monthly Insights</div>
+<div class="section-subtitle">Auto-generated summaries for {{ budget_month|date:"F Y" }}</div>
+</div>
+</div>
+<div class="insight-list">
+{% for item in insights %}
+<div class="insight-card {{ item.tone }}">
+{{ item.text }}
+</div>
+{% endfor %}
+</div>
+</section>
+
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Next Month Projection</div>
+<div class="section-subtitle">Prediction for {{ prediction.month|date:"F Y" }}</div>
+</div>
+<span class="status-pill {% if prediction.risk_level == 'high' %}danger{% elif prediction.risk_level == 'under' %}warning{% elif prediction.risk_level == 'healthy' %}success{% else %}neutral{% endif %}">
+{{ prediction_risk_label }}
+</span>
+</div>
+<div class="projection-grid">
+<div class="projection-value">{{ prediction.predicted_expense|currency }}</div>
+<div class="projection-note">{{ prediction.explanation }}</div>
+</div>
+</section>
+
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Advanced Analytics</div>
+<div class="section-subtitle">Charts update based on your filters.</div>
+</div>
+</div>
+<div class="chart-grid">
+<div class="chart-card">
+<h4>Category-wise Expense</h4>
+<canvas id="categoryChart"></canvas>
+</div>
+<div class="chart-card">
+<h4>Monthly Expense Trend</h4>
+<canvas id="trendChart"></canvas>
+</div>
+<div class="chart-card">
+<h4>Income vs Expense</h4>
+<canvas id="incomeExpenseChart"></canvas>
+</div>
+</div>
+</section>
+
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Add Transaction</div>
+<div class="section-subtitle">Smart categorization suggests a category from the description.</div>
+</div>
+</div>
+<form method="post" action="{% url 'create_transaction' %}" class="form-grid">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<select name="type" required>
+{% for key,label in type_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<select name="payment_mode" required>
+{% for key,label in payment_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<input type="number" step="0.01" name="amount" placeholder="Amount" required>
+<select name="category" id="categorySelect">
+<option value="auto">Auto (Smart)</option>
+{% for key,label in category_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<input type="date" name="date" required>
+<input type="text" name="description" id="descriptionInput" placeholder="Description (e.g., Swiggy order)">
+<button type="submit">Add Transaction</button>
+<span class="hint" id="categoryHint"></span>
+</form>
+
+<div class="section-header">
+<div>
+<div class="section-title">Transactions</div>
+<div class="section-subtitle">Filtered results update totals and charts.</div>
+</div>
+<button type="button" class="action-btn danger" data-reset-transactions>Reset Transactions</button>
+</div>
+
+<div class="transaction-list">
+{% for t in transactions %}
+<div class="transaction-row {{ t.type }}">
+<div class="transaction-main">
+<div class="transaction-title">{{ t.get_category_display }}</div>
+<div class="transaction-meta">{{ t.date }} &bull; {{ t.get_payment_mode_display }}{% if t.description %} &bull; {{ t.description }}{% endif %}</div>
+</div>
+<div class="transaction-amount">{{ t.amount|currency }}</div>
+<div class="transaction-actions">
+<button type="button" class="action-btn" data-edit-transaction
+data-id="{{ t.id }}"
+data-edit-url="{% url 'edit_transaction' t.id %}"
+data-type="{{ t.type }}"
+data-payment="{{ t.payment_mode }}"
+data-amount="{{ t.amount }}"
+data-category="{{ t.category }}"
+data-date="{{ t.date|date:'Y-m-d' }}"
+data-description="{{ t.description|default:''|escapejs }}"
+>Edit</button>
+<button type="button" class="action-btn danger" data-delete-url="{% url 'delete_transaction' t.id %}" data-delete-label="{{ t.get_category_display }} - {{ t.amount|currency }}">Delete</button>
+</div>
+</div>
+{% empty %}
+<div class="empty-state">
+<h4>No transactions yet</h4>
+<p>Add income or expenses to start tracking.</p>
+</div>
+{% endfor %}
+</div>
+</section>
+
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Recurring Transactions</div>
+<div class="section-subtitle">Automate daily, weekly, or monthly entries.</div>
+</div>
+</div>
+<form method="post" action="{% url 'create_recurring' %}" class="form-grid">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<select name="type" required>
+{% for key,label in type_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<select name="payment_mode" required>
+{% for key,label in payment_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<input type="number" step="0.01" name="amount" placeholder="Amount" required>
+<select name="category">
+{% for key,label in category_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<select name="repeat">
+<option value="daily">Daily</option>
+<option value="weekly">Weekly</option>
+<option value="monthly" selected>Monthly</option>
+</select>
+<input type="date" name="start_date" aria-label="Start date" title="Start date" required>
+<input type="date" name="end_date" aria-label="End date" title="End date">
+<div class="weekday-picker">
+<span class="weekday-label">Repeat on</span>
+{% for value,label in weekday_options %}
+<label class="weekday-chip">
+<input type="checkbox" name="weekdays" value="{{ value }}">
+{{ label }}
+</label>
+{% endfor %}
+<span class="weekday-hint">Leave empty to repeat every day (daily) or the start day (weekly).</span>
+</div>
+<input type="text" name="description" placeholder="Description (optional)">
+<button type="submit">Add Recurring</button>
+</form>
+
+<div class="recurring-list">
+{% for item in recurring_items %}
+<div class="recurring-row">
+<div>
+<strong>{{ item.get_category_display }}</strong> &mdash; {{ item.get_repeat_display }}
+<div class="muted">{{ item.start_date }}{% if item.end_date %} to {{ item.end_date }}{% endif %}</div>
+</div>
+<div class="recurring-meta">
+<span>{{ item.amount|currency }}</span>
+<div class="recurring-actions">
+<button type="button" class="action-btn" data-edit-recurring
+data-id="{{ item.id }}"
+data-edit-url="{% url 'edit_recurring' item.id %}"
+data-type="{{ item.type }}"
+data-payment="{{ item.payment_mode }}"
+data-amount="{{ item.amount }}"
+data-category="{{ item.category }}"
+data-repeat="{{ item.repeat }}"
+data-start="{{ item.start_date|date:'Y-m-d' }}"
+data-end="{{ item.end_date|date:'Y-m-d' }}"
+data-description="{{ item.description|default:''|escapejs }}"
+data-weekdays="{{ item.weekdays|default:'' }}"
+>Edit</button>
+<button type="button" class="action-btn danger" data-delete-recurring-url="{% url 'delete_recurring' item.id %}">Delete</button>
+</div>
+</div>
+</div>
+{% empty %}
+<div class="empty-state">
+<h4>No recurring entries yet</h4>
+<p>Create a recurring entry to automate regular payments.</p>
+</div>
+{% endfor %}
+</div>
+</section>
+
+<section class="section-card">
+<div class="section-header">
+<div>
+<div class="section-title">Savings Goals</div>
+<div class="section-subtitle">Current savings: {{ current_savings|currency }}</div>
+</div>
+</div>
+<form method="post" action="{% url 'create_goal' %}" class="inline-form">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<input type="text" name="name" placeholder="Goal name" required>
+<input type="number" step="0.01" name="target_amount" placeholder="Target amount" required>
+<button type="submit">Add Goal</button>
+</form>
+
+<div class="goal-list">
+{% for goal in goals %}
+<div class="goal-row">
+<div>
+<strong>{{ goal.name }}</strong>
+<div class="muted">Remaining: {{ goal.remaining|currency }}</div>
+</div>
+<div class="goal-meta">
+<div class="progress-bar">
+<div class="progress-fill" style="width:{{ goal.progress|floatformat:0 }}%"></div>
+</div>
+<div class="goal-actions">
+<span class="budget-pill neutral">{{ goal.progress|floatformat:0 }}%</span>
+<form method="post" action="{% url 'delete_goal' goal.id %}">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<button type="submit" class="action-btn danger">Delete</button>
+</form>
+</div>
+</div>
+</div>
+{% empty %}
+<div class="empty-state">
+<h4>No goals yet</h4>
+<p>Add a goal to track your savings progress.</p>
+</div>
+{% endfor %}
+</div>
+</section>
+</div>
+
+{{ category_chart|json_script:"category-chart-data" }}
+{{ trend_chart|json_script:"trend-chart-data" }}
+{{ income_expense_chart|json_script:"income-expense-chart-data" }}
+{{ keyword_map|json_script:"keyword-map-data" }}
 
 {% endif %}
 </div>
@@ -944,6 +1811,142 @@ datasets:[{data: JSON.parse('{{ chart_values|escapejs }}')}]
 </form>
 </div>
 </aside>
+
+<div id="deleteModal" class="modal">
+<div class="modal-card">
+<h3>Delete Transaction</h3>
+<p id="deleteModalText">Are you sure you want to delete this transaction?</p>
+<form method="post" id="deleteForm">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<div class="modal-actions">
+<button type="button" class="action-btn" data-modal-close>Cancel</button>
+<button type="submit" class="action-btn danger">Delete</button>
+</div>
+</form>
+</div>
+</div>
+
+<div id="editModal" class="modal">
+<div class="modal-card">
+<h3>Edit Transaction</h3>
+<form method="post" id="editForm">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<select name="type" id="editType">
+{% for key,label in type_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<select name="payment_mode" id="editPayment">
+{% for key,label in payment_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<input type="number" step="0.01" name="amount" id="editAmount" required>
+<select name="category" id="editCategory">
+<option value="auto">Auto (Smart)</option>
+{% for key,label in category_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<input type="date" name="date" id="editDate" required>
+<input type="text" name="description" id="editDescription" placeholder="Description">
+<div class="modal-actions">
+<button type="button" class="action-btn" data-modal-close>Cancel</button>
+<button type="submit" class="action-btn">Save Changes</button>
+</div>
+</form>
+</div>
+</div>
+
+<div id="recurringEditModal" class="modal">
+<div class="modal-card">
+<h3>Edit Recurring Transaction</h3>
+<form method="post" id="recurringEditForm">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<select name="type" id="recurringType">
+{% for key,label in type_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<select name="payment_mode" id="recurringPayment">
+{% for key,label in payment_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<input type="number" step="0.01" name="amount" id="recurringAmount" required>
+<select name="category" id="recurringCategory">
+{% for key,label in category_options %}
+<option value="{{ key }}">{{ label }}</option>
+{% endfor %}
+</select>
+<select name="repeat" id="recurringRepeat">
+<option value="daily">Daily</option>
+<option value="weekly">Weekly</option>
+<option value="monthly">Monthly</option>
+</select>
+<input type="date" name="start_date" id="recurringStart" required>
+<input type="date" name="end_date" id="recurringEnd">
+<div class="weekday-picker">
+<span class="weekday-label">Repeat on</span>
+{% for value,label in weekday_options %}
+<label class="weekday-chip">
+<input type="checkbox" name="weekdays" value="{{ value }}">
+{{ label }}
+</label>
+{% endfor %}
+<span class="weekday-hint">Leave empty to repeat every day (daily) or the start day (weekly).</span>
+</div>
+<input type="text" name="description" id="recurringDescription" placeholder="Description">
+<div class="modal-actions">
+<button type="button" class="action-btn" data-modal-close>Cancel</button>
+<button type="submit" class="action-btn">Save Changes</button>
+</div>
+</form>
+</div>
+</div>
+
+<div id="recurringDeleteModal" class="modal">
+<div class="modal-card">
+<h3>Delete Recurring Series</h3>
+<p>Delete the entire series? You can also remove future generated transactions.</p>
+<form method="post" id="recurringDeleteForm">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<label class="muted">
+<input type="checkbox" name="delete_future">
+Delete future transactions
+</label>
+<div class="modal-actions">
+<button type="button" class="action-btn" data-modal-close>Cancel</button>
+<button type="submit" class="action-btn danger">Delete Series</button>
+</div>
+</form>
+</div>
+</div>
+
+<div id="resetTransactionsModal" class="modal">
+<div class="modal-card">
+<h3>Reset Transactions</h3>
+<p>
+{% if has_filters %}
+This will permanently delete all transactions that match the current filters.
+{% else %}
+This will permanently delete all transactions.
+{% endif %}
+</p>
+<form method="post" id="resetTransactionsForm" action="{% url 'reset_transactions' %}?{{ filter_query }}">
+{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<div class="modal-actions">
+<button type="button" class="action-btn" data-modal-close>Cancel</button>
+<button type="submit" class="action-btn danger">Reset Now</button>
+</div>
+</form>
+</div>
+</div>
 {% endif %}
 
 
@@ -951,97 +1954,258 @@ datasets:[{data: JSON.parse('{{ chart_values|escapejs }}')}]
 This website made by Priyanshu Chatterjee BN & Rohit Sikder&copy; 2026
 </footer>
 
+<script src="{% static 'tracker/dashboard.js' %}" defer></script>
 <script>
-function toggleDrawer(open){
-const d=document.getElementById("profileDrawer");
-const s=document.getElementById("drawerScrim");
-if(!d||!s)return;
-if(open){
-  d.classList.add("open");
-  s.classList.add("open");
-}else{
-  d.classList.remove("open");
-  s.classList.remove("open");
-}
-}
+document.addEventListener("DOMContentLoaded",()=> {
+  setTimeout(()=> {
+    if (window.dashboardReady) return;
 
-document.addEventListener("DOMContentLoaded",()=>{
-  const openBtn=document.getElementById("openDrawerBtn");
-  const closeBtn=document.getElementById("drawerClose");
-  const scrim=document.getElementById("drawerScrim");
+    const qs = (sel) => document.querySelector(sel);
+    const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+    const openBtn = qs("#openDrawerBtn");
+    const closeBtn = qs("#drawerClose");
+    const scrim = qs("#drawerScrim");
+    const drawer = qs("#profileDrawer");
 
-  if(openBtn){
-    openBtn.addEventListener("click",()=>toggleDrawer(true));
-    openBtn.addEventListener("touchstart",e=>{e.preventDefault();toggleDrawer(true);},{passive:false});
+    const toggleDrawer = (open) => {
+      if (!drawer || !scrim) return;
+      drawer.classList.toggle("open", open);
+      scrim.classList.toggle("open", open);
+    };
+
+    if (openBtn) openBtn.addEventListener("click", () => toggleDrawer(true));
+    if (closeBtn) closeBtn.addEventListener("click", () => toggleDrawer(false));
+    if (scrim) scrim.addEventListener("click", () => toggleDrawer(false));
+
+    const openModal = (modal) => {
+      if (modal) modal.classList.add("open");
+    };
+    const closeModal = (modal) => {
+      if (modal) modal.classList.remove("open");
+    };
+
+    qsa(".modal").forEach((modal) => {
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+          closeModal(modal);
+        }
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      const closeBtn = event.target.closest("[data-modal-close]");
+      if (closeBtn) {
+        const modal = closeBtn.closest(".modal");
+        closeModal(modal);
+      }
+    });
+
+    const deleteModal = qs("#deleteModal");
+    const deleteForm = qs("#deleteForm");
+    const deleteText = qs("#deleteModalText");
+    qsa("[data-delete-url]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (deleteForm) deleteForm.action = btn.dataset.deleteUrl;
+        if (deleteText) deleteText.textContent = `Delete ${btn.dataset.deleteLabel}?`;
+        openModal(deleteModal);
+      });
+    });
+
+    const resetModal = qs("#resetTransactionsModal");
+    qsa("[data-reset-transactions]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        openModal(resetModal);
+      });
+    });
+
+    const editModal = qs("#editModal");
+    const editForm = qs("#editForm");
+    qsa("[data-edit-transaction]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (editForm && btn.dataset.editUrl) editForm.action = btn.dataset.editUrl;
+        const setValue = (id, value) => {
+          const el = qs(id);
+          if (el) el.value = value || "";
+        };
+        setValue("#editType", btn.dataset.type);
+        setValue("#editPayment", btn.dataset.payment);
+        setValue("#editAmount", btn.dataset.amount);
+        setValue("#editCategory", btn.dataset.category);
+        setValue("#editDate", btn.dataset.date);
+        setValue("#editDescription", btn.dataset.description);
+        openModal(editModal);
+      });
+    });
+
+    const recurringEditModal = qs("#recurringEditModal");
+    const recurringEditForm = qs("#recurringEditForm");
+    qsa("[data-edit-recurring]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (recurringEditForm && btn.dataset.editUrl) recurringEditForm.action = btn.dataset.editUrl;
+        const setValue = (id, value) => {
+          const el = qs(id);
+          if (el) el.value = value || "";
+        };
+        setValue("#recurringType", btn.dataset.type);
+        setValue("#recurringPayment", btn.dataset.payment);
+        setValue("#recurringAmount", btn.dataset.amount);
+        setValue("#recurringCategory", btn.dataset.category);
+        setValue("#recurringRepeat", btn.dataset.repeat);
+        setValue("#recurringStart", btn.dataset.start);
+        setValue("#recurringEnd", btn.dataset.end);
+        setValue("#recurringDescription", btn.dataset.description);
+        const weekdayInputs = qsa("#recurringEditForm input[name='weekdays']");
+        weekdayInputs.forEach((input) => {
+          input.checked = false;
+        });
+        const days = (btn.dataset.weekdays || "").split(",").filter(Boolean);
+        if (days.length) {
+          weekdayInputs.forEach((input) => {
+            if (days.includes(input.value)) {
+              input.checked = true;
+            }
+          });
+        }
+        openModal(recurringEditModal);
+      });
+    });
+
+    const recurringDeleteModal = qs("#recurringDeleteModal");
+    const recurringDeleteForm = qs("#recurringDeleteForm");
+    qsa("[data-delete-recurring-url]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (recurringDeleteForm) recurringDeleteForm.action = btn.dataset.deleteRecurringUrl;
+        openModal(recurringDeleteModal);
+      });
+    });
+
+    const themeToggle = qs("#themeToggle");
+    const applyTheme = (theme) => {
+      document.body.classList.toggle("theme-dark", theme === "dark");
+      if (themeToggle) themeToggle.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+    };
+
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        const newTheme = document.body.classList.contains("theme-dark") ? "light" : "dark";
+        try {
+          localStorage.setItem("theme", newTheme);
+        } catch (err) {}
+        applyTheme(newTheme);
+      });
+    }
+
+    try {
+      const storedTheme = localStorage.getItem("theme") || "light";
+      applyTheme(storedTheme);
+    } catch (err) {}
+  }, 0);
+});
+
+document.addEventListener("DOMContentLoaded",()=> {
+  const qs = (sel) => document.querySelector(sel);
+  const getJSON = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    try {
+      return JSON.parse(el.textContent);
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const chartLib = window.Chart;
+  if (!chartLib) {
+    return;
   }
-  if(closeBtn){
-    closeBtn.addEventListener("click",()=>toggleDrawer(false));
+
+  const renderChart = (canvasId, config) => {
+    const canvas = qs(canvasId);
+    if (!canvas || canvas.dataset.chartReady === "1") {
+      return;
+    }
+    new chartLib(canvas, config);
+    canvas.dataset.chartReady = "1";
+  };
+
+  const categoryData = getJSON("category-chart-data");
+  if (categoryData && categoryData.labels) {
+    renderChart("#categoryChart", {
+      type: "pie",
+      data: {
+        labels: categoryData.labels,
+        datasets: [{
+          data: categoryData.values || [],
+          backgroundColor: ["#6366f1","#10b981","#f59e0b","#ef4444","#0ea5e9","#8b5cf6"],
+        }],
+      },
+      options: {
+        plugins: {
+          legend: { position: "bottom" },
+        },
+      },
+    });
   }
-  if(scrim){
-    scrim.addEventListener("click",()=>toggleDrawer(false));
-    scrim.addEventListener("touchstart",e=>{e.preventDefault();toggleDrawer(false);},{passive:false});
+
+  const trendData = getJSON("trend-chart-data");
+  if (trendData && trendData.labels) {
+    renderChart("#trendChart", {
+      type: "line",
+      data: {
+        labels: trendData.labels,
+        datasets: [{
+          label: "Expenses",
+          data: trendData.values || [],
+          borderColor: "#4f46e5",
+          backgroundColor: "rgba(79,70,229,.2)",
+          fill: true,
+          tension: 0.4,
+        }],
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+  }
+
+  const incomeExpenseData = getJSON("income-expense-chart-data");
+  if (incomeExpenseData && incomeExpenseData.labels) {
+    renderChart("#incomeExpenseChart", {
+      type: "bar",
+      data: {
+        labels: incomeExpenseData.labels,
+        datasets: [{
+          data: incomeExpenseData.values || [],
+          backgroundColor: ["#10b981", "#ef4444"],
+          borderRadius: 8,
+        }],
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
   }
 
   const meterFills = Array.from(document.querySelectorAll(".meter-fill"));
-  if(meterFills.length){
-    const values = meterFills.map(el => parseFloat(el.dataset.value || "0"));
+  if (meterFills.length) {
+    const values = meterFills.map((el) => parseFloat(el.dataset.value || "0"));
     const totalAbs = values.reduce((sum, value) => sum + Math.abs(value), 0);
     meterFills.forEach((el, index) => {
       const value = values[index];
-      if(value < 0){
+      if (value < 0) {
         el.classList.add("negative");
       }
       const width = totalAbs ? (Math.abs(value) / totalAbs) * 100 : 0;
       el.style.width = `${width.toFixed(1)}%`;
       const percentLabel = el.closest(".meter-card")?.querySelector(".meter-percent");
-      if(percentLabel){
+      if (percentLabel) {
         percentLabel.textContent = `${totalAbs ? (Math.abs(value) / totalAbs * 100).toFixed(0) : 0}%`;
       }
     });
   }
-
-  // auth section is decorative on the landing page now
 });
-
-document.addEventListener("keydown",e=>{
-if(e.key==="Escape") toggleDrawer(false);
-});
-
-if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>{
-    navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
-  });
-}
-
-let deferredInstallPrompt = null;
-const installBtn = document.getElementById("installPwaBtn");
-
-window.addEventListener("beforeinstallprompt",(e)=>{
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  if(installBtn){
-    installBtn.hidden = false;
-  }
-});
-
-window.addEventListener("appinstalled",()=>{
-  deferredInstallPrompt = null;
-  if(installBtn){
-    installBtn.hidden = true;
-  }
-});
-
-if(installBtn){
-  installBtn.addEventListener("click",async ()=>{
-    if(!deferredInstallPrompt){
-      return;
-    }
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    installBtn.hidden = true;
-  });
-}
 </script>
 
 </body>
