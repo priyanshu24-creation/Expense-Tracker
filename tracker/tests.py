@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase, override_settings
 
-from expense_tracker.settings import _env_bool
+from expense_tracker.settings import _email_domain, _env_bool
 from tracker.services.email_sender import (
     _build_sendgrid_payload,
     _send_via_sendgrid_api,
@@ -26,6 +26,11 @@ class SendGridEmailSenderTests(SimpleTestCase):
             self.assertFalse(_env_bool("ANY_FLAG", True))
         with patch("os.getenv", return_value=None):
             self.assertTrue(_env_bool("ANY_FLAG", True))
+
+    def test_email_domain_extracts_domain(self):
+        self.assertEqual(_email_domain("user@gmail.com"), "gmail.com")
+        self.assertEqual(_email_domain(" USER@Example.COM "), "example.com")
+        self.assertEqual(_email_domain("not-an-email"), "")
 
     @override_settings(DEFAULT_FROM_EMAIL="sender@example.com")
     def test_build_sendgrid_payload_includes_to_email(self):

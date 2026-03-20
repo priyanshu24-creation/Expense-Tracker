@@ -15,6 +15,13 @@ def _env_bool(name: str, default: bool = False) -> bool:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
+
+def _email_domain(value: str) -> str:
+    value = (value or "").strip()
+    if "@" not in value:
+        return ""
+    return value.rsplit("@", 1)[-1].lower()
+
 # ======================
 # SECURITY
 # ======================
@@ -231,14 +238,18 @@ EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 # GMAIL SMTP (DEV/ALT)
 # ======================
 
-USE_GMAIL_SMTP = _env_bool("USE_GMAIL_SMTP", False)
+GMAIL_USER = (os.getenv("GMAIL_USER") or "").strip()
+GMAIL_APP_PASSWORD = (os.getenv("GMAIL_APP_PASSWORD") or "").strip()
+USE_GMAIL_SMTP = _env_bool("USE_GMAIL_SMTP", False) or (
+    bool(GMAIL_APP_PASSWORD) and _email_domain(GMAIL_USER or DEFAULT_FROM_EMAIL) in {"gmail.com", "googlemail.com"}
+)
 if USE_GMAIL_SMTP:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = "smtp.gmail.com"
     EMAIL_PORT = 587
     EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.getenv("GMAIL_USER") or DEFAULT_FROM_EMAIL
-    EMAIL_HOST_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+    EMAIL_HOST_USER = GMAIL_USER or DEFAULT_FROM_EMAIL
+    EMAIL_HOST_PASSWORD = GMAIL_APP_PASSWORD
     if EMAIL_HOST_USER:
         DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
