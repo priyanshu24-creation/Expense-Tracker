@@ -6,6 +6,28 @@ from django.core.mail import send_mail
 
 logger = logging.getLogger(__name__)
 
+PUBLIC_WEBMAIL_DOMAINS = {
+    "gmail.com",
+    "googlemail.com",
+    "yahoo.com",
+    "ymail.com",
+    "rocketmail.com",
+    "outlook.com",
+    "hotmail.com",
+    "live.com",
+    "msn.com",
+    "aol.com",
+    "icloud.com",
+    "me.com",
+    "mac.com",
+}
+
+
+def _sendgrid_sender_error(message: str) -> str:
+    if settings.DEBUG:
+        return f"Failed to send email: {message}"
+    return "Email service not configured"
+
 
 def _build_sendgrid_payload(to_email: str, subject: str, body: str):
     recipient_email = (to_email or "").strip()
@@ -17,6 +39,18 @@ def _build_sendgrid_payload(to_email: str, subject: str, body: str):
     if not sender_email:
         logger.error("DEFAULT_FROM_EMAIL is not configured for SendGrid.")
         return None, "Email service not configured"
+
+    sender_domain = sender_email.rsplit("@", 1)[-1].lower() if "@" in sender_email else ""
+    if sender_domain in PUBLIC_WEBMAIL_DOMAINS:
+        logger.error(
+            "DEFAULT_FROM_EMAIL=%s uses a consumer mailbox domain. "
+            "SendGrid mail to Gmail requires a verified custom domain sender for DMARC alignment.",
+            sender_email,
+        )
+        return None, (
+            "Use a verified custom-domain sender email in DEFAULT_FROM_EMAIL, "
+            "not a Gmail/Outlook/Yahoo address"
+        )
 
     return {
         "from": {"email": sender_email},
@@ -44,9 +78,7 @@ def _send_via_sendgrid_api(to_email: str, subject: str, body: str) -> Optional[s
 
     payload, payload_error = _build_sendgrid_payload(to_email, subject, body)
     if payload_error:
-        if settings.DEBUG:
-            return f"Failed to send email: {payload_error}"
-        return "Failed to send email. Try again."
+        return _sendgrid_sender_error(payload_error)
 
     try:
         sg = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)

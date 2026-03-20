@@ -205,7 +205,7 @@ if USE_CLOUDINARY:
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY") or os.getenv("SENDERGRID_API_KEY")
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
-    "trackexpenseteam@gmail.com"
+    ""
 )
 
 # ======================

@@ -27,6 +27,20 @@ class SendGridEmailSenderTests(SimpleTestCase):
         self.assertEqual(payload["subject"], "Verify Your Account")
         self.assertEqual(payload["content"][0]["value"], "Your OTP is 123456")
 
+    @override_settings(DEFAULT_FROM_EMAIL="trackexpenseteam@gmail.com")
+    def test_build_sendgrid_payload_rejects_public_webmail_sender(self):
+        payload, error = _build_sendgrid_payload(
+            "recipient@example.com",
+            "Verify Your Account",
+            "Your OTP is 123456",
+        )
+
+        self.assertIsNone(payload)
+        self.assertEqual(
+            error,
+            "Use a verified custom-domain sender email in DEFAULT_FROM_EMAIL, not a Gmail/Outlook/Yahoo address",
+        )
+
     @override_settings(DEFAULT_FROM_EMAIL="sender@example.com", SENDGRID_API_KEY="test-key", DEBUG=True)
     @patch("sendgrid.SendGridAPIClient")
     def test_sendgrid_api_uses_explicit_payload(self, mock_client_cls):
@@ -56,6 +70,21 @@ class SendGridEmailSenderTests(SimpleTestCase):
         error = _send_via_sendgrid_api("", "Verify Your Account", "Your OTP is 123456")
 
         self.assertEqual(error, "Failed to send email: Recipient email is required")
+        mock_client_cls.assert_not_called()
+
+    @override_settings(DEFAULT_FROM_EMAIL="trackexpenseteam@gmail.com", SENDGRID_API_KEY="test-key", DEBUG=True)
+    @patch("sendgrid.SendGridAPIClient")
+    def test_sendgrid_api_rejects_public_webmail_sender_without_calling_sendgrid(self, mock_client_cls):
+        error = _send_via_sendgrid_api(
+            "recipient@example.com",
+            "Verify Your Account",
+            "Your OTP is 123456",
+        )
+
+        self.assertEqual(
+            error,
+            "Failed to send email: Use a verified custom-domain sender email in DEFAULT_FROM_EMAIL, not a Gmail/Outlook/Yahoo address",
+        )
         mock_client_cls.assert_not_called()
 
     @override_settings(DEBUG=True, SENDGRID_API_KEY="", USE_GMAIL_SMTP=False)
