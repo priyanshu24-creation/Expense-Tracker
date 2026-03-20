@@ -10,6 +10,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 from django.db.models import Sum
+from django.middleware.csrf import get_token
+from django.template.loader import get_template
 
 from datetime import date, timedelta
 import csv
@@ -186,6 +188,18 @@ def _temporary_data_error_message(exc):
     return "We are having trouble reaching the server right now. Please try again in a minute."
 
 
+def _render_auth_template(request, template_name, context=None, status=200, fallback_error_key=None):
+    context = dict(context or {})
+    try:
+        return render(request, template_name, context, status=status)
+    except DatabaseError as exc:
+        if fallback_error_key:
+            context.setdefault(fallback_error_key, _temporary_data_error_message(exc))
+        context.setdefault("csrf_token", get_token(request))
+        template = get_template(template_name)
+        return HttpResponse(template.render(context), status=status)
+
+
 def _render_login_error(request, error):
     if request.POST.get("source") == "index":
         return render(request, "index.html", _guest_context(
@@ -193,13 +207,13 @@ def _render_login_error(request, error):
             login_error=error,
         ))
     if request.POST.get("source") == "get_started":
-        return render(request, "tracker/get_started.html", {
+        return _render_auth_template(request, "tracker/get_started.html", {
             "auth_mode": "login",
             "login_error": error,
-        })
-    return render(request, "tracker/login_email.html", {
+        }, fallback_error_key="login_error")
+    return _render_auth_template(request, "tracker/login_email.html", {
         "error": error,
-    })
+    }, fallback_error_key="error")
 
 
 def _render_signup_error(request, error):
@@ -209,19 +223,19 @@ def _render_signup_error(request, error):
             signup_error=error,
         ))
     if request.POST.get("source") == "get_started":
-        return render(request, "tracker/get_started.html", {
+        return _render_auth_template(request, "tracker/get_started.html", {
             "auth_mode": "signup",
             "signup_error": error,
             "full_name": request.POST.get("full_name", ""),
             "username": request.POST.get("username", ""),
             "email": request.POST.get("email", ""),
-        })
-    return render(request, "tracker/signup.html", {
+        }, fallback_error_key="signup_error")
+    return _render_auth_template(request, "tracker/signup.html", {
         "error": error,
         "full_name": request.POST.get("full_name", ""),
         "username": request.POST.get("username", ""),
         "email": request.POST.get("email", ""),
-    })
+    }, fallback_error_key="error")
 
 
 def _send_otp_email(user, subject):
@@ -316,9 +330,9 @@ def index(request):
 def get_started(request):
     if request.user.is_authenticated:
         return redirect("home")
-    return render(request, "tracker/get_started.html", {
+    return _render_auth_template(request, "tracker/get_started.html", {
         "auth_mode": "login",
-    })
+    }, fallback_error_key="login_error")
 
 
 # =========================
@@ -904,7 +918,7 @@ def email_login(request):
 
         return redirect("verify_otp")
 
-    return render(request, "tracker/login_email.html")
+    return _render_auth_template(request, "tracker/login_email.html", fallback_error_key="error")
 
 
 def email_signup(request):
@@ -918,7 +932,7 @@ def email_signup(request):
 
         return redirect("verify_otp")
 
-    return render(request, "tracker/signup.html")
+    return _render_auth_template(request, "tracker/signup.html", fallback_error_key="error")
 
 
 # =========================

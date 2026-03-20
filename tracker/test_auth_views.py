@@ -5,6 +5,22 @@ from django.test import SimpleTestCase
 
 
 class AuthViewDatabaseResilienceTests(SimpleTestCase):
+    @patch("tracker.views.render", side_effect=OperationalError("db unavailable"))
+    def test_signup_get_uses_fallback_render_when_request_context_hits_db(self, _mock_render):
+        response = self.client.get("/signup/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create Account")
+        self.assertContains(response, "csrfmiddlewaretoken")
+
+    @patch("tracker.views.render", side_effect=OperationalError("db unavailable"))
+    def test_get_started_uses_fallback_render_when_request_context_hits_db(self, _mock_render):
+        response = self.client.get("/get-started/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Get Started")
+        self.assertContains(response, "csrfmiddlewaretoken")
+
     @patch("tracker.views._start_signup_otp", side_effect=OperationalError("db unavailable"))
     def test_signup_db_error_renders_form_instead_of_500(self, _mock_start_signup):
         response = self.client.post(
