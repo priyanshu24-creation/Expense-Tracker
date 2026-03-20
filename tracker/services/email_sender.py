@@ -89,8 +89,11 @@ def send_app_email(to_email: str, subject: str, body: str) -> Optional[str]:
     if settings.SENDGRID_API_KEY:
         return _send_via_sendgrid_api(to_email, subject, body)
 
-    if not settings.DEBUG:
-        logger.error("SENDGRID_API_KEY not configured in production.")
-        return "Email service not configured"
+    if getattr(settings, "USE_GMAIL_SMTP", False):
+        logger.warning("SENDGRID_API_KEY missing; using explicit Gmail SMTP fallback.")
+        return _send_via_smtp(to_email, subject, body)
 
-    return _send_via_smtp(to_email, subject, body)
+    logger.error("SENDGRID_API_KEY missing and Gmail SMTP fallback is disabled.")
+    if settings.DEBUG:
+        return "Failed to send email: Email service not configured"
+    return "Email service not configured"

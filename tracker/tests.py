@@ -2,7 +2,11 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase, override_settings
 
-from tracker.services.email_sender import _build_sendgrid_payload, _send_via_sendgrid_api
+from tracker.services.email_sender import (
+    _build_sendgrid_payload,
+    _send_via_sendgrid_api,
+    send_app_email,
+)
 
 
 class SendGridEmailSenderTests(SimpleTestCase):
@@ -53,3 +57,31 @@ class SendGridEmailSenderTests(SimpleTestCase):
 
         self.assertEqual(error, "Failed to send email: Recipient email is required")
         mock_client_cls.assert_not_called()
+
+    @override_settings(DEBUG=True, SENDGRID_API_KEY="", USE_GMAIL_SMTP=False)
+    @patch("tracker.services.email_sender._send_via_smtp")
+    def test_missing_sendgrid_does_not_fallback_to_smtp_unless_explicitly_enabled(self, mock_smtp):
+        error = send_app_email(
+            "recipient@example.com",
+            "Verify Your Account",
+            "Your OTP is 123456",
+        )
+
+        self.assertEqual(error, "Failed to send email: Email service not configured")
+        mock_smtp.assert_not_called()
+
+    @override_settings(DEBUG=True, SENDGRID_API_KEY="", USE_GMAIL_SMTP=True)
+    @patch("tracker.services.email_sender._send_via_smtp", return_value=None)
+    def test_missing_sendgrid_uses_smtp_only_when_explicitly_enabled(self, mock_smtp):
+        error = send_app_email(
+            "recipient@example.com",
+            "Verify Your Account",
+            "Your OTP is 123456",
+        )
+
+        self.assertIsNone(error)
+        mock_smtp.assert_called_once_with(
+            "recipient@example.com",
+            "Verify Your Account",
+            "Your OTP is 123456",
+        )
