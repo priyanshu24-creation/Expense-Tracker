@@ -8,13 +8,20 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
 # ======================
 # SECURITY
 # ======================
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 
-DEBUG = os.getenv("DEBUG", "True") == "True"
+DEBUG = _env_bool("DEBUG", True)
 
 RAW_CLOUDINARY_URL = (os.getenv("CLOUDINARY_URL") or "").strip().strip("'").strip('"')
 CLOUDINARY_URL_HAS_PLACEHOLDER = any(
@@ -99,7 +106,7 @@ WSGI_APPLICATION = "expense_tracker.wsgi.application"
 # ======================
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-USE_REMOTE_DB = os.getenv("USE_REMOTE_DB", "False") == "True"
+USE_REMOTE_DB = _env_bool("USE_REMOTE_DB", False)
 
 if DATABASE_URL and (not DEBUG or USE_REMOTE_DB):
     remote_database = dj_database_url.parse(
@@ -217,14 +224,14 @@ EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.sendgrid.net")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "apikey")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", SENDGRID_API_KEY or "")
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", True)
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 
 # ======================
 # GMAIL SMTP (DEV/ALT)
 # ======================
 
-USE_GMAIL_SMTP = os.getenv("USE_GMAIL_SMTP", "False") == "True"
+USE_GMAIL_SMTP = _env_bool("USE_GMAIL_SMTP", False)
 if USE_GMAIL_SMTP:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = "smtp.gmail.com"

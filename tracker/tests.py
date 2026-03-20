@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase, override_settings
 
+from expense_tracker.settings import _env_bool
 from tracker.services.email_sender import (
     _build_sendgrid_payload,
     _send_via_sendgrid_api,
@@ -10,6 +11,22 @@ from tracker.services.email_sender import (
 
 
 class SendGridEmailSenderTests(SimpleTestCase):
+    def test_env_bool_accepts_common_true_values(self):
+        with patch("os.getenv", return_value="true"):
+            self.assertTrue(_env_bool("ANY_FLAG", False))
+        with patch("os.getenv", return_value="  YES  "):
+            self.assertTrue(_env_bool("ANY_FLAG", False))
+        with patch("os.getenv", return_value="1"):
+            self.assertTrue(_env_bool("ANY_FLAG", False))
+
+    def test_env_bool_accepts_common_false_values(self):
+        with patch("os.getenv", return_value="false"):
+            self.assertFalse(_env_bool("ANY_FLAG", True))
+        with patch("os.getenv", return_value="0"):
+            self.assertFalse(_env_bool("ANY_FLAG", True))
+        with patch("os.getenv", return_value=None):
+            self.assertTrue(_env_bool("ANY_FLAG", True))
+
     @override_settings(DEFAULT_FROM_EMAIL="sender@example.com")
     def test_build_sendgrid_payload_includes_to_email(self):
         payload, error = _build_sendgrid_payload(
