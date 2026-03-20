@@ -114,3 +114,21 @@ class SendGridEmailSenderTests(SimpleTestCase):
             "Verify Your Account",
             "Your OTP is 123456",
         )
+
+    @override_settings(DEBUG=False, SENDGRID_API_KEY="test-key", USE_GMAIL_SMTP=True)
+    @patch("tracker.services.email_sender._send_via_smtp", return_value=None)
+    @patch("tracker.services.email_sender._send_via_sendgrid_api")
+    def test_gmail_smtp_takes_priority_when_explicitly_enabled(self, mock_sendgrid, mock_smtp):
+        error = send_app_email(
+            "recipient@example.com",
+            "Verify Your Account",
+            "Your OTP is 123456",
+        )
+
+        self.assertIsNone(error)
+        mock_smtp.assert_called_once_with(
+            "recipient@example.com",
+            "Verify Your Account",
+            "Your OTP is 123456",
+        )
+        mock_sendgrid.assert_not_called()
