@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.db import DatabaseError
 from django.db.models import Sum
 
 from datetime import date, timedelta
@@ -176,6 +177,51 @@ def _build_dashboard_context(request):
 
 def _send_email(to_email, subject, body):
     return send_app_email(to_email, subject, body)
+
+
+def _temporary_data_error_message(exc):
+    logger.exception("Database operation failed during auth flow")
+    if settings.DEBUG:
+        return f"Database error: {exc}"
+    return "We are having trouble reaching the server right now. Please try again in a minute."
+
+
+def _render_login_error(request, error):
+    if request.POST.get("source") == "index":
+        return render(request, "index.html", _guest_context(
+            auth_mode="login",
+            login_error=error,
+        ))
+    if request.POST.get("source") == "get_started":
+        return render(request, "tracker/get_started.html", {
+            "auth_mode": "login",
+            "login_error": error,
+        })
+    return render(request, "tracker/login_email.html", {
+        "error": error,
+    })
+
+
+def _render_signup_error(request, error):
+    if request.POST.get("source") == "index":
+        return render(request, "index.html", _guest_context(
+            auth_mode="signup",
+            signup_error=error,
+        ))
+    if request.POST.get("source") == "get_started":
+        return render(request, "tracker/get_started.html", {
+            "auth_mode": "signup",
+            "signup_error": error,
+            "full_name": request.POST.get("full_name", ""),
+            "username": request.POST.get("username", ""),
+            "email": request.POST.get("email", ""),
+        })
+    return render(request, "tracker/signup.html", {
+        "error": error,
+        "full_name": request.POST.get("full_name", ""),
+        "username": request.POST.get("username", ""),
+        "email": request.POST.get("email", ""),
+    })
 
 
 def _send_otp_email(user, subject):
@@ -849,21 +895,12 @@ def edit_profile(request):
 
 def email_login(request):
     if request.method == "POST":
-        _, error = _start_login_otp(request)
+        try:
+            _, error = _start_login_otp(request)
+        except DatabaseError as exc:
+            error = _temporary_data_error_message(exc)
         if error:
-            if request.POST.get("source") == "index":
-                return render(request, "index.html", _guest_context(
-                    auth_mode="login",
-                    login_error=error
-                ))
-            if request.POST.get("source") == "get_started":
-                return render(request, "tracker/get_started.html", {
-                    "auth_mode": "login",
-                    "login_error": error,
-                })
-            return render(request, "tracker/login_email.html", {
-                "error": error
-            })
+            return _render_login_error(request, error)
 
         return redirect("verify_otp")
 
@@ -872,27 +909,12 @@ def email_login(request):
 
 def email_signup(request):
     if request.method == "POST":
-        _, error = _start_signup_otp(request)
+        try:
+            _, error = _start_signup_otp(request)
+        except DatabaseError as exc:
+            error = _temporary_data_error_message(exc)
         if error:
-            if request.POST.get("source") == "index":
-                return render(request, "index.html", _guest_context(
-                    auth_mode="signup",
-                    signup_error=error
-                ))
-            if request.POST.get("source") == "get_started":
-                return render(request, "tracker/get_started.html", {
-                    "auth_mode": "signup",
-                    "signup_error": error,
-                    "full_name": request.POST.get("full_name", ""),
-                    "username": request.POST.get("username", ""),
-                    "email": request.POST.get("email", ""),
-                })
-            return render(request, "tracker/signup.html", {
-                "error": error,
-                "full_name": request.POST.get("full_name", ""),
-                "username": request.POST.get("username", ""),
-                "email": request.POST.get("email", ""),
-            })
+            return _render_signup_error(request, error)
 
         return redirect("verify_otp")
 

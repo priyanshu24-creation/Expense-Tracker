@@ -102,12 +102,19 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 USE_REMOTE_DB = os.getenv("USE_REMOTE_DB", "False") == "True"
 
 if DATABASE_URL and (not DEBUG or USE_REMOTE_DB):
+    remote_database = dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "600")),
+        ssl_require=True,
+    )
+    remote_database["CONN_HEALTH_CHECKS"] = True
+    remote_database.setdefault("OPTIONS", {})
+    remote_database["OPTIONS"].setdefault(
+        "connect_timeout",
+        int(os.getenv("DB_CONNECT_TIMEOUT", "10")),
+    )
     DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=True,
-        )
+        "default": remote_database
     }
 else:
     DATABASES = {
